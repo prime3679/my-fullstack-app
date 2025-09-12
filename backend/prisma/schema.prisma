@@ -1,0 +1,342 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Restaurant {
+  id           String  @id @default(cuid())
+  name         String
+  slug         String  @unique
+  timezone     String  @default("America/New_York")
+  currency     String  @default("USD")
+  posType      String? @map("pos_type")
+  openTableId  String? @map("opentable_id")
+  settingsJson Json?   @map("settings_json")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  locations    Location[]
+  reservations Reservation[]
+  users        User[] // Staff users
+  loyaltyAccounts LoyaltyAccount[]
+  events       Event[]
+  auditLogs    AuditLog[]
+
+  @@map("restaurant")
+}
+
+model Location {
+  id               String  @id @default(cuid())
+  restaurantId     String  @map("restaurant_id")
+  address          String
+  phone            String?
+  capacityRulesJson Json?  @map("capacity_rules_json")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  tables     Table[]
+  checkins   CheckIn[]
+
+  @@map("location")
+}
+
+model Table {
+  id           String @id @default(cuid())
+  locationId   String @map("location_id")
+  label        String
+  seats        Int
+  featuresJson Json?  @map("features_json")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  location Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  checkins CheckIn[]
+
+  @@map("table")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  phone             String?
+  name              String
+  locale            String   @default("en")
+  marketingOptIn    Boolean  @default(false) @map("marketing_opt_in")
+  hashedPassword    String?  @map("hashed_pw")
+  stripeCustomerId  String?  @map("stripe_customer_id")
+  role              UserRole @default(DINER)
+  restaurantId      String?  @map("restaurant_id") // For staff users
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  restaurant      Restaurant?      @relation(fields: [restaurantId], references: [id])
+  dinerProfile    DinerProfile?
+  reservations    Reservation[]
+  loyaltyAccounts LoyaltyAccount[]
+  events          Event[]
+  auditLogs       AuditLog[]
+
+  @@map("user")
+}
+
+model DinerProfile {
+  userId       String   @id @map("user_id")
+  allergensJson Json?   @map("allergens_json")
+  dietaryTags  String[] @map("dietary_tags")
+  favoriteSkus String[] @map("favorite_skus")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("diner_profile")
+}
+
+model Reservation {
+  id           String            @id @default(cuid())
+  restaurantId String            @map("restaurant_id")
+  userId       String?           @map("user_id")
+  partySize    Int               @map("party_size")
+  startAt      DateTime          @map("start_at")
+  status       ReservationStatus @default(DRAFT)
+  source       String            @default("lacarta")
+  externalId   String?           @map("external_id")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  restaurant     Restaurant      @relation(fields: [restaurantId], references: [id])
+  user           User?           @relation(fields: [userId], references: [id])
+  preOrder       PreOrder?
+  checkin        CheckIn?
+  kitchenTicket  KitchenTicket?
+  events         Event[]
+
+  @@index([restaurantId, startAt])
+  @@map("reservation")
+}
+
+model PreOrder {
+  id            String          @id @default(cuid())
+  reservationId String          @unique @map("reservation_id")
+  status        PreOrderStatus  @default(DRAFT)
+  subtotal      Int // Amount in cents
+  tax           Int
+  tip           Int
+  total         Int
+  currency      String          @default("USD")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  reservation Reservation     @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  items       PreOrderItem[]
+  payments    Payment[]
+
+  @@map("preorder")
+}
+
+model PreOrderItem {
+  id            String @id @default(cuid())
+  preorderId    String @map("preorder_id")
+  sku           String
+  name          String
+  quantity      Int
+  price         Int // Amount in cents
+  modifiersJson Json?  @map("modifiers_json")
+  notes         String?
+  allergensJson Json?  @map("allergens_json")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  preorder PreOrder @relation(fields: [preorderId], references: [id], onDelete: Cascade)
+
+  @@map("preorder_item")
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  preorderId  String        @map("preorder_id")
+  stripePaymentIntentId String @map("stripe_pi")
+  amount      Int // Amount in cents
+  status      PaymentStatus @default(PENDING)
+  capturedAt  DateTime?     @map("captured_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  preorder PreOrder @relation(fields: [preorderId], references: [id])
+
+  @@unique([stripePaymentIntentId])
+  @@map("payment")
+}
+
+model CheckIn {
+  id            String       @id @default(cuid())
+  reservationId String       @unique @map("reservation_id")
+  method        CheckInMethod
+  scannedAt     DateTime     @map("scanned_at")
+  tableId       String?      @map("table_id")
+  locationId    String       @map("location_id")
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+  table       Table?      @relation(fields: [tableId], references: [id])
+  location    Location    @relation(fields: [locationId], references: [id])
+
+  @@map("checkin")
+}
+
+model KitchenTicket {
+  id            String              @id @default(cuid())
+  reservationId String              @unique @map("reservation_id")
+  status        KitchenTicketStatus @default(PENDING)
+  firedAt       DateTime?           @map("fired_at")
+  readyAt       DateTime?           @map("ready_at")
+  pacingJson    Json?               @map("pacing_json")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+
+  @@map("kitchen_ticket")
+}
+
+model LoyaltyAccount {
+  id           String @id @default(cuid())
+  userId       String @map("user_id")
+  restaurantId String @map("restaurant_id")
+  points       Int    @default(0)
+  tier         String @default("bronze")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user       User       @relation(fields: [userId], references: [id])
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@unique([userId, restaurantId])
+  @@map("loyalty_account")
+}
+
+model Event {
+  id           String   @id @default(cuid())
+  kind         String
+  actorId      String?  @map("actor_id")
+  restaurantId String?  @map("restaurant_id")
+  reservationId String? @map("reservation_id")
+  payloadJson  Json     @map("payload_json")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  actor        User?        @relation(fields: [actorId], references: [id])
+  restaurant   Restaurant?  @relation(fields: [restaurantId], references: [id])
+  reservation  Reservation? @relation(fields: [reservationId], references: [id])
+
+  @@index([kind, createdAt])
+  @@index([restaurantId, createdAt])
+  @@map("event")
+}
+
+model Embedding {
+  id       String      @id @default(cuid())
+  type     EmbeddingType
+  sourceId String      @map("source_id")
+  vector   Float[]     // pgvector support
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  @@index([type, sourceId])
+  @@map("embedding")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorId      String?  @map("actor_id")
+  action       String
+  resource     String
+  beforeJson   Json?    @map("before_json")
+  afterJson    Json?    @map("after_json")
+  restaurantId String?  @map("restaurant_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  actor      User?       @relation(fields: [actorId], references: [id])
+  restaurant Restaurant? @relation(fields: [restaurantId], references: [id])
+
+  @@index([resource, createdAt])
+  @@map("audit_log")
+}
+
+// Enums
+enum UserRole {
+  DINER
+  HOST
+  SERVER
+  EXPO
+  KITCHEN
+  MANAGER
+  ORG_ADMIN
+  SUPPORT
+}
+
+enum ReservationStatus {
+  DRAFT
+  BOOKED
+  CHECKED_IN
+  COMPLETED
+  CANCELED
+  NO_SHOW
+}
+
+enum PreOrderStatus {
+  DRAFT
+  AUTHORIZED
+  INJECTED_TO_POS
+  CLOSED
+  REFUNDED
+  ADJUSTED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+enum CheckInMethod {
+  QR_SCAN
+  MANUAL
+  INTEGRATION
+}
+
+enum KitchenTicketStatus {
+  PENDING
+  HOLD
+  FIRED
+  READY
+  SERVED
+}
+
+enum EmbeddingType {
+  MENU_ITEM
+  RESTAURANT
+  USER_PREFERENCE
+}
