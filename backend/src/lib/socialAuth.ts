@@ -7,6 +7,19 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key_change_in_production';
 
+// Helper function to convert unknown errors to proper error objects
+function formatError(error: unknown): { name: string; message: string; stack?: string; code?: string } {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: (error as any).code
+    };
+  }
+  return { name: 'Unknown', message: String(error) };
+}
+
 interface SocialProfile {
   id: string;
   provider: 'google' | 'apple';
@@ -35,10 +48,10 @@ export class SocialAuthService {
           };
           
           const user = await SocialAuthService.findOrCreateUser(socialProfile);
-          return done(null, user);
+          return done(undefined, user);
         } catch (error) {
-          Logger.error('Google OAuth error', { error });
-          return done(error, null);
+          Logger.error('Google OAuth error', { error: formatError(error) });
+          return done(error, undefined);
         }
       }));
     }
@@ -52,7 +65,7 @@ export class SocialAuthService {
         privateKey: process.env.APPLE_PRIVATE_KEY,
         callbackURL: process.env.APPLE_CALLBACK_URL || 'http://localhost:3001/api/v1/auth/apple/callback',
         scope: ['email', 'name']
-      }, async (accessToken, refreshToken, idToken, profile, done) => {
+      }, async (accessToken: any, refreshToken: any, idToken: any, profile: any, done: any) => {
         try {
           // Apple provides minimal profile data
           const socialProfile: SocialProfile = {
@@ -63,17 +76,17 @@ export class SocialAuthService {
           };
           
           const user = await SocialAuthService.findOrCreateUser(socialProfile);
-          return done(null, user);
+          return done(undefined, user);
         } catch (error) {
-          Logger.error('Apple OAuth error', { error });
-          return done(error, null);
+          Logger.error('Apple OAuth error', { error: formatError(error) });
+          return done(error, undefined);
         }
       }));
     }
 
     // Serialize/deserialize for session management (though we'll use JWT)
     passport.serializeUser((user: any, done) => {
-      done(null, user.id);
+      done(undefined, user.id);
     });
 
     passport.deserializeUser(async (id: string, done) => {
@@ -82,9 +95,9 @@ export class SocialAuthService {
           where: { id },
           include: { dinerProfile: true }
         });
-        done(null, user);
+        done(undefined, user);
       } catch (error) {
-        done(error, null);
+        done(error, undefined);
       }
     });
   }
@@ -127,7 +140,7 @@ export class SocialAuthService {
           name: socialProfile.name,
           role: 'DINER',
           marketingOptIn: true, // Default to true for social users to receive welcome emails
-          hashedPassword: null
+          hashedPassword: undefined
         },
         include: { dinerProfile: true }
       });
@@ -136,7 +149,7 @@ export class SocialAuthService {
       await prisma.dinerProfile.create({
         data: {
           userId: user.id,
-          allergensJson: null,
+          allergensJson: undefined,
           dietaryTags: [],
           favoriteSkus: []
         }
@@ -211,7 +224,7 @@ export class SocialAuthService {
           role: 'DINER',
           marketingOptIn: false,
           // Don't set password for social login users
-          hashedPassword: null
+          hashedPassword: undefined
         },
         include: { dinerProfile: true }
       });
@@ -220,7 +233,7 @@ export class SocialAuthService {
       await prisma.dinerProfile.create({
         data: {
           userId: user.id,
-          allergensJson: null,
+          allergensJson: undefined,
           dietaryTags: [],
           favoriteSkus: []
         }
@@ -271,7 +284,7 @@ export class SocialAuthService {
     );
   }
 
-  static async verifyGoogleToken(idToken: string): Promise<SocialProfile | null> {
+  static async verifyGoogleToken(idToken: string): Promise<SocialProfile | undefined> {
     try {
       // For production, you'd verify the token with Google's API
       // For now, we'll use a simplified approach
@@ -283,25 +296,25 @@ export class SocialAuthService {
       // });
       // const payload = ticket.getPayload();
       
-      // For demo purposes, return null to indicate token verification needed
+      // For demo purposes, return undefined to indicate token verification needed
       Logger.warn('Google token verification not implemented for production', { idToken: idToken.substring(0, 20) + '...' });
-      return null;
+      return undefined;
     } catch (error) {
-      Logger.error('Google token verification error', { error });
-      return null;
+      Logger.error('Google token verification error', { error: formatError(error) });
+      return undefined;
     }
   }
 
-  static async verifyAppleToken(idToken: string): Promise<SocialProfile | null> {
+  static async verifyAppleToken(idToken: string): Promise<SocialProfile | undefined> {
     try {
       // For production, you'd verify the token with Apple's API
       // This requires decoding the JWT and verifying the signature
       
       Logger.warn('Apple token verification not implemented for production', { idToken: idToken.substring(0, 20) + '...' });
-      return null;
+      return undefined;
     } catch (error) {
-      Logger.error('Apple token verification error', { error });
-      return null;
+      Logger.error('Apple token verification error', { error: formatError(error) });
+      return undefined;
     }
   }
 }

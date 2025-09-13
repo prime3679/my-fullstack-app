@@ -9,6 +9,19 @@ import { businessEventLogger } from '../lib/middleware';
 import { SocialAuthService, SocialLoginRequest, SocialLoginResponse } from '../lib/socialAuth';
 import { emailService, WelcomeSequenceContext } from '../lib/emailService';
 
+// Helper function to convert unknown errors to proper error objects
+function formatError(error: unknown): { name: string; message: string; stack?: string; code?: string } {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: (error as any).code
+    };
+  }
+  return { name: 'Unknown', message: String(error) };
+}
+
 // Validation schemas
 const signupSchema = z.object({
   phone: z.string().min(10).max(15),
@@ -175,7 +188,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       });
 
       if (error instanceof z.ZodError) {
-        return reply.code(400).send({ error: 'Validation failed', details: error.errors });
+        return reply.code(400).send({ error: 'Validation failed', details: error.issues || [] });
       }
 
       return reply.code(500).send({ error: 'Internal server error' });
@@ -304,7 +317,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       };
 
     } catch (error) {
-      Logger.error('Quick signup failed', { error });
+      Logger.error('Quick signup failed', { error: formatError(error) });
       return reply.code(500).send({ error: 'Signup failed' });
     }
   });
@@ -359,7 +372,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       };
 
     } catch (error) {
-      Logger.error('Phone verification failed', { error });
+      Logger.error('Phone verification failed', { error: formatError(error) });
       return reply.code(500).send({ error: 'Verification failed' });
     }
   });
@@ -403,7 +416,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       };
 
     } catch (error) {
-      Logger.error('Get user profile failed', { error });
+      Logger.error('Get user profile failed', { error: formatError(error) });
       return reply.code(500).send({ error: 'Failed to get profile' });
     }
   });
@@ -495,13 +508,13 @@ export async function authRoutes(fastify: FastifyInstance) {
       return response;
 
     } catch (error) {
-      Logger.error('Social login failed', { error });
+      Logger.error('Social login failed', { error: formatError(error) });
 
       if (error instanceof z.ZodError) {
         return reply.code(400).send({ 
           success: false, 
           error: 'Invalid request data',
-          details: error.errors
+          details: error.issues || []
         });
       }
 
@@ -535,7 +548,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/callback?token=${token}&provider=google`;
         reply.redirect(redirectUrl);
       } catch (error) {
-        Logger.error('Google OAuth token generation error', { error });
+        Logger.error('Google OAuth token generation error', { error: formatError(error) });
         reply.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=token_generation_failed`);
       }
     })(request, reply);
@@ -562,7 +575,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/callback?token=${token}&provider=apple`;
         reply.redirect(redirectUrl);
       } catch (error) {
-        Logger.error('Apple OAuth token generation error', { error });
+        Logger.error('Apple OAuth token generation error', { error: formatError(error) });
         reply.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=token_generation_failed`);
       }
     })(request, reply);

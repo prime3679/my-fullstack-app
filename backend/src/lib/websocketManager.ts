@@ -1,11 +1,24 @@
 import { FastifyInstance } from 'fastify';
 import { WebSocket } from 'ws';
 
+interface SocketStream {
+  on(event: 'message', handler: (message: Buffer) => void): void;
+  on(event: 'close', handler: () => void): void;
+  send(message: string): void;
+  readyState: number;
+}
+
 interface KitchenClient {
-  websocket: any; // Fastify WebSocket connection object
+  websocket: SocketStream;
   restaurantId: string;
   clientId: string;
   connectedAt: Date;
+}
+
+interface ClientMessage {
+  type: string;
+  filters?: any;
+  [key: string]: any;
 }
 
 export class WebSocketManager {
@@ -19,14 +32,14 @@ export class WebSocketManager {
     const self = this;
     await this.fastify.register(async function (fastify) {
       fastify.get('/ws/kitchen/:restaurantId', { websocket: true }, (connection, req) => {
-        const restaurantId = (req.params as any).restaurantId;
+        const restaurantId = (req.params as any).restaurantId as string;
         const clientId = `kitchen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
         console.log(`Kitchen client connected: ${clientId} for restaurant ${restaurantId}`);
 
         // Store client connection
         const client: KitchenClient = {
-          websocket: connection,
+          websocket: connection as SocketStream,
           restaurantId,
           clientId,
           connectedAt: new Date()
@@ -35,9 +48,9 @@ export class WebSocketManager {
         self.clients.set(clientId, client);
 
         // Handle client messages
-        connection.on('message', (message: any) => {
+        connection.on('message', (message: Buffer) => {
           try {
-            const data = JSON.parse(message.toString());
+            const data: ClientMessage = JSON.parse(message.toString());
             self.handleClientMessage(clientId, data);
           } catch (error) {
             console.error('Invalid WebSocket message:', error);
@@ -62,7 +75,7 @@ export class WebSocketManager {
   }
 
   // Handle incoming messages from clients
-  private handleClientMessage(clientId: string, data: any) {
+  private handleClientMessage(clientId: string, data: ClientMessage): void {
     const client = this.clients.get(clientId);
     if (!client) return;
 
@@ -88,7 +101,7 @@ export class WebSocketManager {
   }
 
   // Send message to a specific client
-  private sendToClient(clientId: string, data: any) {
+  private sendToClient(clientId: string, data: any): boolean {
     const client = this.clients.get(clientId);
     if (!client || client.websocket.readyState !== WebSocket.OPEN) {
       return false;
@@ -105,7 +118,7 @@ export class WebSocketManager {
   }
 
   // Broadcast to all clients for a specific restaurant
-  broadcastToRestaurant(restaurantId: string, data: any) {
+  broadcastToRestaurant(restaurantId: string, data: any): number {
     const restaurantClients = Array.from(this.clients.values())
       .filter(client => client.restaurantId === restaurantId);
 
@@ -118,8 +131,8 @@ export class WebSocketManager {
   }
 
   // Kitchen ticket status update notification
-  notifyTicketUpdate(restaurantId: string, ticketData: any) {
-    this.broadcastToRestaurant(restaurantId, {
+  notifyTicketUpdate(restaurantId: string, ticketData: any): number {
+    return this.broadcastToRestaurant(restaurantId, {
       type: 'ticket_updated',
       ticket: ticketData,
       timestamp: new Date().toISOString()
@@ -127,8 +140,8 @@ export class WebSocketManager {
   }
 
   // New kitchen ticket created
-  notifyNewTicket(restaurantId: string, ticketData: any) {
-    this.broadcastToRestaurant(restaurantId, {
+  notifyNewTicket(restaurantId: string, ticketData: any): number {
+    return this.broadcastToRestaurant(restaurantId, {
       type: 'new_ticket',
       ticket: ticketData,
       timestamp: new Date().toISOString()
@@ -136,8 +149,8 @@ export class WebSocketManager {
   }
 
   // Kitchen dashboard stats update
-  notifyStatsUpdate(restaurantId: string, stats: any) {
-    this.broadcastToRestaurant(restaurantId, {
+  notifyStatsUpdate(restaurantId: string, stats: any): number {
+    return this.broadcastToRestaurant(restaurantId, {
       type: 'stats_updated',
       stats,
       timestamp: new Date().toISOString()
@@ -145,8 +158,8 @@ export class WebSocketManager {
   }
 
   // Ticket ready for pickup notification
-  notifyTicketReady(restaurantId: string, ticketData: any) {
-    this.broadcastToRestaurant(restaurantId, {
+  notifyTicketReady(restaurantId: string, ticketData: any): number {
+    return this.broadcastToRestaurant(restaurantId, {
       type: 'ticket_ready',
       ticket: ticketData,
       timestamp: new Date().toISOString(),
@@ -155,8 +168,8 @@ export class WebSocketManager {
   }
 
   // Kitchen timer/pacing updates
-  notifyTimerUpdate(restaurantId: string, ticketId: string, timeData: any) {
-    this.broadcastToRestaurant(restaurantId, {
+  notifyTimerUpdate(restaurantId: string, ticketId: string, timeData: any): number {
+    return this.broadcastToRestaurant(restaurantId, {
       type: 'timer_update',
       ticketId,
       timeData,
@@ -165,8 +178,8 @@ export class WebSocketManager {
   }
 
   // Emergency kitchen alert (e.g., running very late)
-  notifyEmergencyAlert(restaurantId: string, alert: any) {
-    this.broadcastToRestaurant(restaurantId, {
+  notifyEmergencyAlert(restaurantId: string, alert: any): number {
+    return this.broadcastToRestaurant(restaurantId, {
       type: 'emergency_alert',
       alert,
       timestamp: new Date().toISOString(),
@@ -176,7 +189,7 @@ export class WebSocketManager {
   }
 
   // Get connected clients info
-  getConnectedClients(restaurantId?: string) {
+  getConnectedClients(restaurantId?: string): KitchenClient[] {
     const allClients = Array.from(this.clients.values());
     
     if (restaurantId) {
@@ -203,7 +216,7 @@ export class WebSocketManager {
   }
 
   // Cleanup disconnected clients
-  cleanup() {
+  cleanup(): number {
     const disconnectedClients: string[] = [];
     
     for (const [clientId, client] of this.clients.entries()) {

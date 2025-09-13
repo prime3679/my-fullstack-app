@@ -5,6 +5,19 @@ import path from 'path';
 import { Logger } from './logger';
 import { prisma } from './db';
 
+// Helper function to convert unknown errors to proper error objects
+function formatError(error: unknown): { name: string; message: string; stack?: string; code?: string } {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: (error as any).code
+    };
+  }
+  return { name: 'Unknown', message: String(error) };
+}
+
 export interface EmailTemplate {
   subject: string;
   htmlTemplate: string;
@@ -31,7 +44,7 @@ export interface WelcomeSequenceContext {
 }
 
 export class EmailService {
-  private transporter: nodemailer.Transporter;
+  private transporter!: nodemailer.Transporter;
   private templatesCache: Map<string, EmailTemplate> = new Map();
 
   constructor() {
@@ -43,7 +56,7 @@ export class EmailService {
     // Configure based on environment
     if (process.env.NODE_ENV === 'production') {
       // Production: Use actual SMTP service (SendGrid, Mailgun, etc.)
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT || '587'),
         secure: process.env.SMTP_SECURE === 'true',
@@ -54,7 +67,7 @@ export class EmailService {
       });
     } else {
       // Development: Use Ethereal Email for testing
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',
         port: 587,
         secure: false,
@@ -100,7 +113,7 @@ export class EmailService {
         templates: Array.from(this.templatesCache.keys())
       });
     } catch (error) {
-      Logger.error('Failed to load email templates', { error });
+      Logger.error('Failed to load email templates', { error: formatError(error) });
     }
   }
 
@@ -151,7 +164,7 @@ export class EmailService {
       return true;
     } catch (error) {
       Logger.error('Failed to send email', {
-        error,
+        error: formatError(error),
         to: data.to,
         subject: data.subject
       });
@@ -197,7 +210,7 @@ export class EmailService {
         templateData: data
       });
     } catch (error) {
-      Logger.error('Failed to render email template', { error, templateName });
+      Logger.error('Failed to render email template', { error: formatError(error), templateName });
       return false;
     }
   }
@@ -232,7 +245,7 @@ export class EmailService {
 
       return true;
     } catch (error) {
-      Logger.error('Failed to start welcome sequence', { error, userId: context.userId });
+      Logger.error('Failed to start welcome sequence', { error: formatError(error), userId: context.userId });
       return false;
     }
   }
@@ -272,7 +285,7 @@ export class EmailService {
         });
       } catch (error) {
         Logger.error('Failed to send scheduled email', { 
-          error, 
+          error: formatError(error), 
           templateName, 
           userId: context.userId 
         });
@@ -322,7 +335,7 @@ export class EmailService {
         }
       });
     } catch (error) {
-      Logger.error('Failed to log email event', { error, eventType, data });
+      Logger.error('Failed to log email event', { error: formatError(error), eventType, data });
     }
   }
 
@@ -332,7 +345,7 @@ export class EmailService {
       Logger.info('Email service connection verified');
       return true;
     } catch (error) {
-      Logger.error('Email service connection failed', { error });
+      Logger.error('Email service connection failed', { error: formatError(error) });
       return false;
     }
   }

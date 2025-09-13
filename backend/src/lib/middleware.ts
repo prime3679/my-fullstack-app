@@ -18,7 +18,7 @@ declare module 'fastify' {
 
 export async function requestLoggingPlugin(fastify: FastifyInstance) {
   // Add request context
-  fastify.decorateRequest('context', null);
+  fastify.decorateRequest('context', {} as RequestContext);
   
   // Pre-handler hook to initialize context and log incoming requests
   fastify.addHook('preHandler', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -38,7 +38,7 @@ export async function requestLoggingPlugin(fastify: FastifyInstance) {
       userAgent: request.headers['user-agent'],
       method: request.method,
       route: request.url,
-      action: `${request.method} ${request.routerPath || request.url}`
+      action: `${request.method} ${(request as any).routerPath || request.url}`
     });
   });
 
@@ -50,7 +50,7 @@ export async function requestLoggingPlugin(fastify: FastifyInstance) {
     const statusCode = reply.statusCode;
     
     Logger.performance(
-      request.routerPath || request.url,
+      (request as any).routerPath || request.url,
       request.method,
       duration,
       {
@@ -72,7 +72,7 @@ export async function requestLoggingPlugin(fastify: FastifyInstance) {
       performance: {
         duration,
         method: request.method,
-        route: request.routerPath || request.url
+        route: (request as any).routerPath || request.url
       }
     });
   });

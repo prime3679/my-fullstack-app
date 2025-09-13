@@ -19,6 +19,8 @@ export interface LogContext {
     stack?: string;
     code?: string;
   };
+  // Allow additional properties for flexible logging
+  [key: string]: any;
 }
 
 const logger = pino({
@@ -26,7 +28,7 @@ const logger = pino({
   formatters: {
     level: (label: string) => ({ level: label.toUpperCase() }),
   },
-  timestamp: pino.stdTimeFunctions.isoTime,
+  timestamp: () => `,"time":"${new Date().toISOString()}"`,
   redact: {
     paths: ['password', 'token', 'secret', 'authorization'],
     censor: '[REDACTED]'
