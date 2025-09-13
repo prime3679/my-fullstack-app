@@ -3,7 +3,12 @@ import {
   Restaurant, 
   AvailabilityResponse, 
   CreateReservationRequest, 
-  Reservation 
+  Reservation,
+  MenuResponse,
+  MenuItem,
+  PreOrder,
+  CreatePreOrderRequest,
+  PreOrderCalculation
 } from '../../../shared/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -89,6 +94,68 @@ export const api = {
     return apiRequest(`/reservations/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
+    });
+  },
+
+  // Menu endpoints
+  async getRestaurantMenu(restaurantId: string): Promise<ApiResponse<MenuResponse>> {
+    return apiRequest(`/menu/restaurant/${restaurantId}`);
+  },
+
+  async getMenuItem(restaurantId: string, sku: string): Promise<ApiResponse<MenuItem>> {
+    return apiRequest(`/menu/restaurant/${restaurantId}/item/${sku}`);
+  },
+
+  async searchMenuItems(
+    restaurantId: string, 
+    query?: string, 
+    dietary?: string[], 
+    excludeAllergens?: string[]
+  ): Promise<ApiResponse<{ items: MenuItem[]; count: number }>> {
+    const params = new URLSearchParams();
+    if (query) params.append('q', query);
+    if (dietary?.length) params.append('dietary', dietary.join(','));
+    if (excludeAllergens?.length) params.append('allergens', excludeAllergens.join(','));
+    
+    return apiRequest(`/menu/restaurant/${restaurantId}/search?${params}`);
+  },
+
+  // Pre-order endpoints
+  async calculatePreOrder(
+    restaurantId: string, 
+    items: CreatePreOrderRequest['items']
+  ): Promise<ApiResponse<PreOrderCalculation>> {
+    return apiRequest('/preorders/calculate', {
+      method: 'POST',
+      body: JSON.stringify({ restaurantId, items }),
+    });
+  },
+
+  async createPreOrder(data: CreatePreOrderRequest): Promise<ApiResponse<PreOrder>> {
+    return apiRequest('/preorders', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getPreOrder(id: string): Promise<ApiResponse<PreOrder>> {
+    return apiRequest(`/preorders/${id}`);
+  },
+
+  async updatePreOrderItem(
+    preOrderId: string, 
+    itemId: string, 
+    updates: { quantity?: number; notes?: string }
+  ): Promise<ApiResponse<any>> {
+    return apiRequest(`/preorders/${preOrderId}/items/${itemId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  async removePreOrderItem(preOrderId: string, itemId: string): Promise<ApiResponse<any>> {
+    return apiRequest(`/preorders/${preOrderId}/items/${itemId}`, {
+      method: 'DELETE',
     });
   },
 };

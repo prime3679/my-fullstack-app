@@ -29,6 +29,8 @@ model Restaurant {
   loyaltyAccounts LoyaltyAccount[]
   events       Event[]
   auditLogs    AuditLog[]
+  menuCategories MenuCategory[]
+  menuItems    MenuItem[]
 
   @@map("restaurant")
 }
@@ -339,4 +341,99 @@ enum EmbeddingType {
   MENU_ITEM
   RESTAURANT
   USER_PREFERENCE
+}
+
+model MenuCategory {
+  id           String @id @default(cuid())
+  restaurantId String @map("restaurant_id")
+  name         String
+  description  String?
+  sortOrder    Int    @default(0) @map("sort_order")
+  isActive     Boolean @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  menuItems  MenuItem[]
+
+  @@map("menu_category")
+}
+
+model MenuItem {
+  id             String  @id @default(cuid())
+  restaurantId   String  @map("restaurant_id")
+  categoryId     String  @map("category_id")
+  sku            String  
+  name           String
+  description    String?
+  price          Int     // Price in cents
+  imageUrl       String? @map("image_url")
+  prepTimeMinutes Int?   @map("prep_time_minutes")
+  isAvailable    Boolean @default(true) @map("is_available")
+  is86           Boolean @default(false) // 86'd (out of stock)
+  allergensJson  Json?   @map("allergens_json") // ["dairy", "gluten", "shellfish"]
+  dietaryTags    String[] @map("dietary_tags") // ["vegetarian", "vegan", "gluten-free"]
+  nutritionJson  Json?   @map("nutrition_json") // calories, protein, etc.
+  sortOrder      Int     @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  category      MenuCategory @relation(fields: [categoryId], references: [id])
+  modifierGroups MenuItemModifierGroup[]
+
+  @@unique([restaurantId, sku])
+  @@map("menu_item")
+}
+
+model ModifierGroup {
+  id           String  @id @default(cuid())
+  restaurantId String  @map("restaurant_id")
+  name         String
+  description  String?
+  minSelections Int    @default(0) @map("min_selections")
+  maxSelections Int    @default(1) @map("max_selections")
+  isRequired   Boolean @default(false) @map("is_required")
+  sortOrder    Int     @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  modifiers  Modifier[]
+  menuItems  MenuItemModifierGroup[]
+
+  @@map("modifier_group")
+}
+
+model Modifier {
+  id              String @id @default(cuid())
+  modifierGroupId String @map("modifier_group_id")
+  name            String
+  description     String?
+  price           Int    @default(0) // Additional price in cents
+  isAvailable     Boolean @default(true) @map("is_available")
+  sortOrder       Int    @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  modifierGroup ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@map("modifier")
+}
+
+model MenuItemModifierGroup {
+  menuItemId      String @map("menu_item_id")
+  modifierGroupId String @map("modifier_group_id")
+  isRequired      Boolean @default(false) @map("is_required")
+  sortOrder       Int    @default(0) @map("sort_order")
+
+  // Relations
+  menuItem      MenuItem      @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  modifierGroup ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@id([menuItemId, modifierGroupId])
+  @@map("menu_item_modifier_group")
 }

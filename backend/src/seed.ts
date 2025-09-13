@@ -131,6 +131,230 @@ async function main() {
     }
   });
 
+  // Create menu categories
+  const appetizers = await prisma.menuCategory.create({
+    data: {
+      restaurantId: restaurant.id,
+      name: 'Appetizers',
+      description: 'Start your meal with these delicious small plates',
+      sortOrder: 1
+    }
+  });
+
+  const sushi = await prisma.menuCategory.create({
+    data: {
+      restaurantId: restaurant.id,
+      name: 'Sushi & Sashimi',
+      description: 'Fresh fish prepared by our master sushi chefs',
+      sortOrder: 2
+    }
+  });
+
+  const mains = await prisma.menuCategory.create({
+    data: {
+      restaurantId: restaurant.id,
+      name: 'Main Courses',
+      description: 'Hearty dishes to satisfy your appetite',
+      sortOrder: 3
+    }
+  });
+
+  const desserts = await prisma.menuCategory.create({
+    data: {
+      restaurantId: restaurant.id,
+      name: 'Desserts',
+      description: 'Sweet endings to your perfect meal',
+      sortOrder: 4
+    }
+  });
+
+  // Create modifier groups
+  const spiceLevelGroup = await prisma.modifierGroup.create({
+    data: {
+      restaurantId: restaurant.id,
+      name: 'Spice Level',
+      description: 'How spicy would you like it?',
+      minSelections: 1,
+      maxSelections: 1,
+      isRequired: true
+    }
+  });
+
+  const spiceLevels = await Promise.all([
+    prisma.modifier.create({
+      data: {
+        modifierGroupId: spiceLevelGroup.id,
+        name: 'Mild',
+        price: 0,
+        sortOrder: 1
+      }
+    }),
+    prisma.modifier.create({
+      data: {
+        modifierGroupId: spiceLevelGroup.id,
+        name: 'Medium',
+        price: 0,
+        sortOrder: 2
+      }
+    }),
+    prisma.modifier.create({
+      data: {
+        modifierGroupId: spiceLevelGroup.id,
+        name: 'Hot',
+        price: 0,
+        sortOrder: 3
+      }
+    })
+  ]);
+
+  const extrasGroup = await prisma.modifierGroup.create({
+    data: {
+      restaurantId: restaurant.id,
+      name: 'Extras',
+      description: 'Add something special',
+      minSelections: 0,
+      maxSelections: 3,
+      isRequired: false
+    }
+  });
+
+  const extras = await Promise.all([
+    prisma.modifier.create({
+      data: {
+        modifierGroupId: extrasGroup.id,
+        name: 'Extra Ginger',
+        price: 50, // $0.50
+        sortOrder: 1
+      }
+    }),
+    prisma.modifier.create({
+      data: {
+        modifierGroupId: extrasGroup.id,
+        name: 'Extra Wasabi',
+        price: 50,
+        sortOrder: 2
+      }
+    }),
+    prisma.modifier.create({
+      data: {
+        modifierGroupId: extrasGroup.id,
+        name: 'No Onions',
+        price: 0,
+        sortOrder: 3
+      }
+    })
+  ]);
+
+  // Create menu items
+  const misoSoup = await prisma.menuItem.create({
+    data: {
+      restaurantId: restaurant.id,
+      categoryId: appetizers.id,
+      sku: 'miso_soup',
+      name: 'Miso Soup',
+      description: 'Traditional soybean soup with tofu, seaweed, and scallions',
+      price: 650, // $6.50
+      prepTimeMinutes: 5,
+      allergensJson: ['soy'],
+      dietaryTags: ['vegetarian', 'gluten-free'],
+      sortOrder: 1
+    }
+  });
+
+  const edamame = await prisma.menuItem.create({
+    data: {
+      restaurantId: restaurant.id,
+      categoryId: appetizers.id,
+      sku: 'edamame',
+      name: 'Edamame',
+      description: 'Steamed and salted young soybeans',
+      price: 550, // $5.50
+      prepTimeMinutes: 3,
+      allergensJson: ['soy'],
+      dietaryTags: ['vegetarian', 'vegan', 'gluten-free'],
+      sortOrder: 2
+    }
+  });
+
+  const salmonNigiri = await prisma.menuItem.create({
+    data: {
+      restaurantId: restaurant.id,
+      categoryId: sushi.id,
+      sku: 'salmon_nigiri',
+      name: 'Salmon Nigiri',
+      description: 'Two pieces of fresh salmon over seasoned rice',
+      price: 850, // $8.50
+      prepTimeMinutes: 8,
+      allergensJson: ['fish'],
+      dietaryTags: [],
+      sortOrder: 1
+    }
+  });
+
+  const spicyTuna = await prisma.menuItem.create({
+    data: {
+      restaurantId: restaurant.id,
+      categoryId: sushi.id,
+      sku: 'spicy_tuna_roll',
+      name: 'Spicy Tuna Roll',
+      description: 'Tuna, spicy mayo, cucumber, and avocado',
+      price: 1250, // $12.50
+      prepTimeMinutes: 10,
+      allergensJson: ['fish', 'eggs'],
+      dietaryTags: [],
+      sortOrder: 2
+    }
+  });
+
+  const teriyakiChicken = await prisma.menuItem.create({
+    data: {
+      restaurantId: restaurant.id,
+      categoryId: mains.id,
+      sku: 'teriyaki_chicken',
+      name: 'Teriyaki Chicken',
+      description: 'Grilled chicken glazed with house teriyaki sauce, served with rice and vegetables',
+      price: 1850, // $18.50
+      prepTimeMinutes: 15,
+      allergensJson: ['soy', 'gluten'],
+      dietaryTags: [],
+      sortOrder: 1
+    }
+  });
+
+  const matchaIceCream = await prisma.menuItem.create({
+    data: {
+      restaurantId: restaurant.id,
+      categoryId: desserts.id,
+      sku: 'matcha_ice_cream',
+      name: 'Matcha Ice Cream',
+      description: 'Premium green tea ice cream with red bean topping',
+      price: 750, // $7.50
+      prepTimeMinutes: 2,
+      allergensJson: ['dairy'],
+      dietaryTags: ['vegetarian'],
+      sortOrder: 1
+    }
+  });
+
+  // Connect modifiers to menu items
+  await prisma.menuItemModifierGroup.create({
+    data: {
+      menuItemId: spicyTuna.id,
+      modifierGroupId: spiceLevelGroup.id,
+      isRequired: true,
+      sortOrder: 1
+    }
+  });
+
+  await prisma.menuItemModifierGroup.create({
+    data: {
+      menuItemId: spicyTuna.id,
+      modifierGroupId: extrasGroup.id,
+      isRequired: false,
+      sortOrder: 2
+    }
+  });
+
   console.log('✅ Database seeded successfully!');
   console.log(`🏪 Restaurant: ${restaurant.name} (${restaurant.slug})`);
   console.log(`📍 Location: ${location.address}`);
@@ -139,6 +363,8 @@ async function main() {
   console.log(`👨‍💼 Manager: ${manager.email}`);
   console.log(`🏨 Host: ${host.email}`);
   console.log(`📅 Demo reservation: ${reservation.id}`);
+  console.log(`🍽️ Menu categories: ${[appetizers, sushi, mains, desserts].length}`);
+  console.log(`🍜 Menu items: 6 items with modifiers`);
 }
 
 main()

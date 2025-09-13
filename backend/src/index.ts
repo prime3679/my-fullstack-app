@@ -2,6 +2,10 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { db } from './lib/db';
+import { reservationRoutes } from './routes/reservations';
+import { restaurantRoutes } from './routes/restaurants';
+import { menuRoutes } from './routes/menu';
+import { preOrderRoutes } from './routes/preorders';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -20,6 +24,12 @@ async function start() {
       origin: process.env.FRONTEND_URL || 'http://localhost:3000',
       credentials: true
     });
+
+    // Register routes
+    await fastify.register(restaurantRoutes, { prefix: '/api/v1/restaurants' });
+    await fastify.register(reservationRoutes, { prefix: '/api/v1/reservations' });
+    await fastify.register(menuRoutes, { prefix: '/api/v1/menu' });
+    await fastify.register(preOrderRoutes, { prefix: '/api/v1/preorders' });
 
     // Health check endpoint
     fastify.get('/api/health', async (request, reply) => {
