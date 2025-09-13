@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,6 +55,7 @@ export default function PreOrderCart({
   restaurantName,
   onOrderComplete 
 }: PreOrderCartProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [calculation, setCalculation] = useState<PreOrderCalculation | null>(null);
   const [loading, setLoading] = useState(false);
@@ -147,6 +149,46 @@ export default function PreOrderCart({
     } catch (error) {
       console.error('Failed to place order:', error);
       alert('Failed to place order. Please try again.');
+    } finally {
+      setPlacing(false);
+    }
+  };
+
+  const placeGuestOrder = async () => {
+    if (!guestInfo.name || !guestInfo.email) {
+      alert('Please fill in your name and email');
+      return;
+    }
+
+    setPlacing(true);
+    try {
+      const orderData: CreatePreOrderRequest = {
+        guestInfo: {
+          name: guestInfo.name,
+          email: guestInfo.email,
+          phone: guestInfo.phone
+        },
+        items: cart.map(item => ({
+          sku: item.sku,
+          quantity: item.quantity,
+          modifiers: item.modifiers.map(mod => ({
+            modifierGroupId: mod.modifierGroupId,
+            modifierId: mod.modifierId
+          })),
+          notes: item.notes
+        }))
+      };
+
+      const response = await api.createPreOrder(orderData);
+      
+      if (response.success) {
+        onUpdateCart([]); // Clear cart
+        setIsOpen(false);
+        router.push(`/restaurant/${restaurantId}/preorder/${response.data.id}/payment`);
+      }
+    } catch (error) {
+      console.error('Failed to create guest order:', error);
+      alert('Failed to create order. Please try again.');
     } finally {
       setPlacing(false);
     }
@@ -364,11 +406,21 @@ export default function PreOrderCart({
                 </Button>
               ) : (
                 <Button
-                  disabled={!guestInfo.name || !guestInfo.email}
+                  onClick={placeGuestOrder}
+                  disabled={placing || !guestInfo.name || !guestInfo.email}
                   className="flex-1"
                 >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Continue to Payment
+                  {placing ? (
+                    <>
+                      <Clock className="h-4 w-4 mr-2 animate-spin" />
+                      Creating Order...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Continue to Payment
+                    </>
+                  )}
                 </Button>
               )}
             </div>

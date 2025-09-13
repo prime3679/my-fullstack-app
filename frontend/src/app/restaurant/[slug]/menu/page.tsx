@@ -131,8 +131,9 @@ export default function MenuPage() {
   };
 
   const handleOrderComplete = (preOrderId: string) => {
-    console.log('Pre-order completed:', preOrderId);
-    // Could redirect to confirmation page or show success message
+    console.log('Pre-order created:', preOrderId);
+    // Redirect to payment page
+    window.location.href = `/restaurant/${slug}/preorder/${preOrderId}/payment`;
   };
 
   const filteredItems = menu?.categories.flatMap(category => 

@@ -1,0 +1,233 @@
+{{!-- Subject: Unlock your La Carta VIP benefits --}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your La Carta VIP Benefits</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e11d48;
+            margin-bottom: 5px;
+        }
+        .vip-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .greeting {
+            font-size: 22px;
+            color: #111827;
+            margin-bottom: 20px;
+        }
+        .feature-grid {
+            display: grid;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .feature-card {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #e5e7eb;
+            transition: transform 0.2s;
+        }
+        .feature-icon {
+            font-size: 28px;
+            margin-bottom: 15px;
+            display: block;
+        }
+        .feature-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 10px;
+        }
+        .feature-desc {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .feature-cta {
+            display: inline-block;
+            background: #e11d48;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .exclusive-box {
+            background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            border: 1px solid #8b5cf6;
+            text-align: center;
+        }
+        .exclusive-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #6d28d9;
+            margin-bottom: 10px;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .stat {
+            flex: 1;
+            padding: 15px;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e11d48;
+            display: block;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">La Carta</div>
+            <div class="vip-badge">👑 VIP MEMBER</div>
+        </div>
+
+        <div class="greeting">
+            {{userName}}, unlock your VIP dining superpowers! 🚀
+        </div>
+
+        <p>You've been with us for a few days now, which means you're ready for the good stuff. La Carta isn't just about fast, convenient dining – it's about making every meal feel like a special occasion.</p>
+
+        <div class="stats-row">
+            <div class="stat">
+                <span class="stat-number">5min</span>
+                <div class="stat-label">Average wait time</div>
+            </div>
+            <div class="stat">
+                <span class="stat-number">4.9★</span>
+                <div class="stat-label">Member satisfaction</div>
+            </div>
+            <div class="stat">
+                <span class="stat-number">15%</span>
+                <div class="stat-label">Avg. savings</div>
+            </div>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <span class="feature-icon">🎯</span>
+                <div class="feature-title">Smart Recommendations</div>
+                <div class="feature-desc">AI-powered menu suggestions based on your taste preferences, dietary needs, and dining history.</div>
+                <a href="{{appUrl}}/profile/preferences" class="feature-cta">Set Preferences</a>
+            </div>
+
+            <div class="feature-card">
+                <span class="feature-icon">⚡</span>
+                <div class="feature-title">Priority Reservations</div>
+                <div class="feature-desc">Access to exclusive time slots and last-minute availability that others can't see.</div>
+                <a href="{{appUrl}}/restaurants" class="feature-cta">Book Now</a>
+            </div>
+
+            <div class="feature-card">
+                <span class="feature-icon">🎁</span>
+                <div class="feature-title">Member Rewards</div>
+                <div class="feature-desc">Earn points on every order, get birthday treats, and unlock exclusive chef specials.</div>
+                <a href="{{appUrl}}/rewards" class="feature-cta">View Rewards</a>
+            </div>
+
+            <div class="feature-card">
+                <span class="feature-icon">👥</span>
+                <div class="feature-title">Group Ordering</div>
+                <div class="feature-desc">Planning dinner for friends? Send them a link to add their orders to your reservation.</div>
+                <a href="{{appUrl}}/help/group-ordering" class="feature-cta">Learn More</a>
+            </div>
+
+            <div class="feature-card">
+                <span class="feature-icon">📱</span>
+                <div class="feature-title">Real-time Updates</div>
+                <div class="feature-desc">Get notifications about your order status, table readiness, and special offers.</div>
+                <a href="{{appUrl}}/profile/notifications" class="feature-cta">Manage Alerts</a>
+            </div>
+
+            <div class="feature-card">
+                <span class="feature-icon">🏆</span>
+                <div class="feature-title">Chef's Table Access</div>
+                <div class="feature-desc">First access to tasting menus, wine pairings, and exclusive dining experiences.</div>
+                <a href="{{appUrl}}/experiences" class="feature-cta">Explore</a>
+            </div>
+        </div>
+
+        <div class="exclusive-box">
+            <div class="exclusive-title">🎊 This Week Only</div>
+            <p style="margin: 15px 0;">Complete your profile preferences and get a <strong>$15 credit</strong> toward your next reservation. Plus, we'll make sure your dining recommendations are spot-on!</p>
+            <a href="{{appUrl}}/profile/preferences" style="display: inline-block; background: #6d28d9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 10px;">Claim $15 Credit</a>
+        </div>
+
+        <p>The best part? All of these features work automatically once you set them up. We handle the details so you can focus on what matters – enjoying incredible food with the people you care about.</p>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{appUrl}}/profile" style="display: inline-block; background: #e11d48; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600;">Complete Your Profile</a>
+        </div>
+
+        <p style="text-align: center; color: #6b7280; font-size: 14px;">
+            Questions about your VIP benefits? <a href="mailto:{{supportEmail}}" style="color: #e11d48;">Email us</a> – we love helping members get the most out of La Carta.
+        </p>
+
+        <div class="footer">
+            <p>Your VIP experience awaits,<br>The La Carta Team</p>
+            <p style="margin-top: 15px;">
+                <a href="{{appUrl}}" style="color: #6b7280; text-decoration: none;">La Carta</a> • 
+                <a href="{{supportEmail}}" style="color: #6b7280; text-decoration: none;">VIP Support</a>
+            </p>
+            <p style="margin-top: 10px; font-size: 12px;">
+                © {{year}} La Carta. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

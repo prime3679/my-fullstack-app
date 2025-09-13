@@ -1,0 +1,264 @@
+{{!-- Subject: Welcome to the {{restaurantName}} team! --}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Invitation - {{restaurantName}}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e11d48;
+            margin-bottom: 10px;
+        }
+        .restaurant-name {
+            font-size: 20px;
+            color: #374151;
+            margin-bottom: 20px;
+        }
+        .greeting {
+            font-size: 24px;
+            color: #111827;
+            margin-bottom: 20px;
+        }
+        .role-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .credentials-box {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        .credentials-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 15px;
+        }
+        .credential-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .credential-label {
+            font-weight: 600;
+            color: #374151;
+        }
+        .credential-value {
+            font-family: 'Courier New', monospace;
+            background: #f3f4f6;
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: #1f2937;
+            font-size: 14px;
+        }
+        .login-button {
+            display: inline-block;
+            background: #e11d48;
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 20px 0;
+        }
+        .features {
+            background: #f0f9ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            margin: 12px 0;
+        }
+        .feature-icon {
+            margin-right: 12px;
+            font-size: 18px;
+            margin-top: 2px;
+        }
+        .security-note {
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 14px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">La Carta</div>
+            <div class="restaurant-name">{{restaurantName}}</div>
+        </div>
+
+        <div class="greeting">
+            Welcome to the team, {{staffName}}! 👋
+        </div>
+
+        <p>You've been invited to join <strong>{{restaurantName}}</strong> as a <span class="role-badge">{{role}}</span>. We're excited to have you as part of the La Carta platform – where exceptional hospitality meets cutting-edge technology.</p>
+
+        <div class="credentials-box">
+            <div class="credentials-title">🔐 Your Login Credentials</div>
+            <div class="credential-item">
+                <div class="credential-label">Email:</div>
+                <div class="credential-value">{{staffEmail}}</div>
+            </div>
+            <div class="credential-item">
+                <div class="credential-label">Temporary Password:</div>
+                <div class="credential-value">{{tempPassword}}</div>
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <a href="{{loginUrl}}" class="login-button">Login to Staff Portal</a>
+        </div>
+
+        <div class="security-note">
+            <strong>Important:</strong> Please change your password immediately after your first login. Your temporary password expires in 24 hours for security.
+        </div>
+
+        <div class="features">
+            <h3 style="margin-top: 0; color: #111827;">What you'll have access to:</h3>
+            
+            {{#if (eq role 'host')}}
+            <div class="feature-item">
+                <span class="feature-icon">📋</span>
+                <span><strong>Reservation Management:</strong> View, modify, and manage guest reservations and waitlists</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">👥</span>
+                <span><strong>Guest Relations:</strong> Access guest preferences, special requests, and dining history</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">📱</span>
+                <span><strong>Real-time Updates:</strong> Get instant notifications about arrivals, delays, and special needs</span>
+            </div>
+            {{/if}}
+
+            {{#if (eq role 'server')}}
+            <div class="feature-item">
+                <span class="feature-icon">🍽️</span>
+                <span><strong>Order Management:</strong> View pre-orders, dietary restrictions, and special requests</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">💳</span>
+                <span><strong>Payment Handling:</strong> Process additional orders, modifications, and gratuities</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">⭐</span>
+                <span><strong>Guest Experience:</strong> Access loyalty status, preferences, and personalized recommendations</span>
+            </div>
+            {{/if}}
+
+            {{#if (eq role 'kitchen')}}
+            <div class="feature-item">
+                <span class="feature-icon">👨‍🍳</span>
+                <span><strong>Kitchen Display:</strong> Real-time order queue with timing and special instructions</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">⏱️</span>
+                <span><strong>Timing Control:</strong> Hold, fire, and mark orders ready with ETA tracking</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">🔄</span>
+                <span><strong>Order Modifications:</strong> Handle last-minute changes and dietary accommodations</span>
+            </div>
+            {{/if}}
+
+            {{#if (eq role 'manager')}}
+            <div class="feature-item">
+                <span class="feature-icon">📊</span>
+                <span><strong>Analytics Dashboard:</strong> Revenue, covers, timing metrics, and guest satisfaction</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">👥</span>
+                <span><strong>Staff Management:</strong> Invite team members, assign roles, and manage permissions</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">⚙️</span>
+                <span><strong>Restaurant Settings:</strong> Manage menus, availability, pricing, and operational hours</span>
+            </div>
+            {{/if}}
+
+            <div class="feature-item">
+                <span class="feature-icon">📞</span>
+                <span><strong>Support Access:</strong> Direct line to La Carta support for any technical issues</span>
+            </div>
+        </div>
+
+        <p>The La Carta platform is designed to help you deliver exceptional experiences while streamlining operations. Everything is integrated – from reservations to payments to kitchen timing – so you can focus on what you do best: hospitality.</p>
+
+        <p><strong>Next Steps:</strong></p>
+        <ol style="padding-left: 20px; color: #374151;">
+            <li>Click the login button above to access your staff portal</li>
+            <li>Change your temporary password to something secure</li>
+            <li>Complete your staff profile with your preferences and availability</li>
+            <li>Explore the training materials and feature guides</li>
+            <li>Reach out to your manager or our support team with any questions</li>
+        </ol>
+
+        <p>We're here to support you every step of the way. Welcome to the future of restaurant operations!</p>
+
+        <div class="footer">
+            <p>Welcome aboard,<br>The La Carta Team</p>
+            <p style="margin: 20px 0;">
+                <strong>{{restaurantName}}</strong><br>
+                <a href="{{loginUrl}}" style="color: #6b7280; text-decoration: none;">Staff Portal</a> • 
+                <a href="{{supportEmail}}" style="color: #6b7280; text-decoration: none;">Support</a>
+            </p>
+            <p style="font-size: 12px;">
+                © {{year}} La Carta. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

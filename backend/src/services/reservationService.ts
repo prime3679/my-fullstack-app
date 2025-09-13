@@ -21,10 +21,12 @@ export interface AvailabilityQuery {
 export class ReservationService {
   
   async checkAvailability({ restaurantId, partySize, date }: AvailabilityQuery) {
-    const startDate = new Date(date);
+    // Parse date explicitly to avoid timezone issues
+    const [year, month, day] = date.split('-').map(Number);
+    const startDate = new Date(year, month - 1, day); // month is 0-based
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 1);
-
+    
     // Get restaurant's capacity rules and operating hours
     const restaurant = await db.restaurant.findUnique({
       where: { id: restaurantId },
@@ -131,9 +133,18 @@ export class ReservationService {
       date: input.startAt.toISOString().split('T')[0]
     });
 
-    const requestedSlot = availability.availableSlots.find(slot => 
-      new Date(slot.time).getTime() === input.startAt.getTime()
-    );
+    // More lenient time comparison - check if times are within same minute
+    const requestedSlot = availability.availableSlots.find(slot => {
+      const slotTime = new Date(slot.time);
+      const requestedTime = input.startAt;
+      
+      // Compare year, month, day, hour, and minute
+      return slotTime.getFullYear() === requestedTime.getFullYear() &&
+             slotTime.getMonth() === requestedTime.getMonth() &&
+             slotTime.getDate() === requestedTime.getDate() &&
+             slotTime.getHours() === requestedTime.getHours() &&
+             slotTime.getMinutes() === requestedTime.getMinutes();
+    });
 
     if (!requestedSlot || !requestedSlot.available) {
       throw new Error('Requested time slot is no longer available');

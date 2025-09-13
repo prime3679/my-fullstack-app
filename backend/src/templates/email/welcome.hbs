@@ -1,0 +1,147 @@
+{{!-- Subject: Welcome to La Carta! --}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to La Carta</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e11d48;
+            margin-bottom: 10px;
+        }
+        .tagline {
+            color: #6b7280;
+            font-size: 16px;
+        }
+        .greeting {
+            font-size: 24px;
+            color: #111827;
+            margin-bottom: 20px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: #e11d48;
+            color: white;
+            padding: 14px 28px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+        }
+        .features {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .feature-icon {
+            margin-right: 12px;
+            font-size: 18px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">La Carta</div>
+            <div class="tagline">Dinner, accelerated to delight</div>
+        </div>
+
+        <div class="greeting">
+            Welcome, {{userName}}! 🎉
+        </div>
+
+        <div class="content">
+            <p>We're thrilled to have you join the La Carta family! You've just unlocked a dining experience that transforms "I'm hungry" into "first bite" in minutes that feel luxurious, not rushed.</p>
+            
+            {{#if registrationMethod}}
+            <p>Thanks for signing up {{#if (eq registrationMethod 'google')}}with Google{{else if (eq registrationMethod 'apple')}}with Apple{{else if (eq registrationMethod 'phone')}}with your phone{{else}}with email{{/if}}. Your account is all set up and ready to go!</p>
+            {{/if}}
+
+            <div class="features">
+                <h3 style="margin-top: 0; color: #111827;">What makes La Carta special:</h3>
+                <div class="feature-item">
+                    <span class="feature-icon">⚡</span>
+                    <span><strong>Skip the wait:</strong> Reserve, pre-order, and pre-pay in one seamless flow</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🍽️</span>
+                    <span><strong>Perfect timing:</strong> Your food arrives within 5 minutes of being seated</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">✨</span>
+                    <span><strong>VIP treatment:</strong> Personalized recommendations and exclusive perks</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📱</span>
+                    <span><strong>Effortless payments:</strong> Apple Pay, Google Pay, or saved cards</span>
+                </div>
+            </div>
+
+            {{#if restaurantName}}
+            <p>Since you discovered us through <strong>{{restaurantName}}</strong>, you're already on your way to an amazing dining experience. They're one of our partner restaurants committed to exceptional hospitality.</p>
+            {{/if}}
+        </div>
+
+        <div style="text-align: center;">
+            <a href="{{appUrl}}/restaurants" class="cta-button">Explore Restaurants</a>
+        </div>
+
+        <div class="content">
+            <p>Over the next few days, we'll send you some helpful tips to get the most out of La Carta. But don't wait – you can start making reservations right away!</p>
+            
+            <p>Have questions? Just reply to this email or reach out to us at <a href="mailto:{{supportEmail}}" style="color: #e11d48;">{{supportEmail}}</a>. We're here to help make every meal memorable.</p>
+        </div>
+
+        <div class="footer">
+            <p>Welcome to the future of dining,<br>
+            The La Carta Team</p>
+            <p style="margin-top: 20px;">
+                <a href="{{appUrl}}" style="color: #6b7280; text-decoration: none;">La Carta</a> • 
+                <a href="{{supportEmail}}" style="color: #6b7280; text-decoration: none;">Support</a>
+            </p>
+            <p style="margin-top: 10px; font-size: 12px;">
+                © {{year}} La Carta. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

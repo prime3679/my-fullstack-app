@@ -1,0 +1,267 @@
+{{!-- Subject: Your weekly La Carta digest --}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Weekly La Carta Digest</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f3f4f6;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e11d48;
+            margin-bottom: 5px;
+        }
+        .date-badge {
+            background: #f3f4f6;
+            color: #6b7280;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .greeting {
+            font-size: 22px;
+            color: #111827;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin: 30px 0;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .section-icon {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        .restaurant-card {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #e11d48;
+        }
+        .restaurant-name {
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 5px;
+        }
+        .restaurant-desc {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .restaurant-cta {
+            display: inline-block;
+            background: #e11d48;
+            color: white;
+            padding: 6px 12px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .tip-box {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #10b981;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e11d48;
+            display: block;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+        .cta-section {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .big-cta {
+            display: inline-block;
+            background: #d97706;
+            color: white;
+            padding: 14px 28px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">La Carta</div>
+            <div class="date-badge">Weekly Digest</div>
+        </div>
+
+        <div class="greeting">
+            Welcome to your first week, {{userName}}! 🎉
+        </div>
+
+        <p>It's been a week since you joined La Carta, and we wanted to share what's been happening in the world of elevated dining. Plus, some recommendations just for you!</p>
+
+        <div class="section">
+            <div class="section-title">
+                <span class="section-icon">🌟</span>
+                New Restaurants This Week
+            </div>
+            
+            <div class="restaurant-card">
+                <div class="restaurant-name">Ember & Oak</div>
+                <div class="restaurant-desc">Farm-to-table cuisine with a stunning wine program. Known for their wood-fired meats and seasonal vegetable preparations.</div>
+                <a href="{{appUrl}}/restaurants/ember-oak" class="restaurant-cta">View Menu</a>
+            </div>
+
+            <div class="restaurant-card">
+                <div class="restaurant-name">The Glass House</div>
+                <div class="restaurant-desc">Modern seafood with panoramic city views. Their tasting menu changes weekly based on the freshest catches.</div>
+                <a href="{{appUrl}}/restaurants/glass-house" class="restaurant-cta">Make Reservation</a>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">
+                <span class="section-icon">📊</span>
+                This Week in Numbers
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-number">2,847</span>
+                    <div class="stat-label">Happy diners served</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">4.2min</span>
+                    <div class="stat-label">Average wait time</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">98%</span>
+                    <div class="stat-label">On-time arrivals</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">$47</span>
+                    <div class="stat-label">Avg member savings</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">
+                <span class="section-icon">💡</span>
+                Pro Tip of the Week
+            </div>
+            <div class="tip-box">
+                <strong>Set your arrival preferences!</strong> Let restaurants know if you prefer to be seated immediately or if you'd like a few minutes at the bar first. Many of our partner venues offer complimentary appetizers or drinks while you settle in.
+                <br><br>
+                <a href="{{appUrl}}/profile/dining-preferences" style="color: #059669; text-decoration: underline;">Update your preferences →</a>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">
+                <span class="section-icon">🍽️</span>
+                Trending This Week
+            </div>
+            <p style="margin-bottom: 20px;">What La Carta members are loving right now:</p>
+            <ul style="color: #6b7280; padding-left: 20px;">
+                <li><strong>Brunch reservations</strong> are up 34% – weekend availability is filling fast</li>
+                <li><strong>Wine pairing add-ons</strong> – sommelier-curated selections for your meal</li>
+                <li><strong>Group ordering</strong> – perfect for dinner parties and celebrations</li>
+                <li><strong>Dietary customizations</strong> – restaurants are loving our detailed allergy/preference system</li>
+            </ul>
+        </div>
+
+        <div class="cta-section">
+            <h3 style="margin-top: 0; color: #92400e;">Ready for your first La Carta experience?</h3>
+            <p style="margin: 15px 0; color: #1f2937;">You've got all the tools – now it's time to experience what makes La Carta special. From reservation to last bite in under 90 seconds of effort.</p>
+            <a href="{{appUrl}}/restaurants" class="big-cta">Browse Restaurants</a>
+        </div>
+
+        <div class="section">
+            <div class="section-title">
+                <span class="section-icon">📧</span>
+                What's Next?
+            </div>
+            <p>We'll continue sending you these weekly digests with new restaurant openings, member favorites, and dining trends. But you can also:</p>
+            <ul style="color: #6b7280; padding-left: 20px;">
+                <li>Follow us on social for daily updates and behind-the-scenes content</li>
+                <li>Join our community forum to share reviews and get recommendations</li>
+                <li>Refer friends and earn dining credits (up to $50 per referral!)</li>
+            </ul>
+        </div>
+
+        <p>Thanks for being part of the La Carta community. We can't wait to help you discover your next favorite restaurant!</p>
+
+        <div class="footer">
+            <p>Happy dining,<br>The La Carta Team</p>
+            <p style="margin: 20px 0;">
+                <a href="{{appUrl}}/profile/notifications" style="color: #6b7280; text-decoration: none;">Manage email preferences</a> • 
+                <a href="{{appUrl}}" style="color: #6b7280; text-decoration: none;">La Carta</a> • 
+                <a href="{{supportEmail}}" style="color: #6b7280; text-decoration: none;">Support</a>
+            </p>
+            <p style="font-size: 12px;">
+                © {{year}} La Carta. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

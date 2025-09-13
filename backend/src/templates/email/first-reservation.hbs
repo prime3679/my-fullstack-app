@@ -1,0 +1,172 @@
+{{!-- Subject: Ready for your first La Carta experience? --}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your First La Carta Reservation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e11d48;
+            margin-bottom: 5px;
+        }
+        .greeting {
+            font-size: 22px;
+            color: #111827;
+            margin-bottom: 20px;
+        }
+        .highlight-box {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            border: 1px solid #f87171;
+            text-align: center;
+        }
+        .highlight-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #dc2626;
+            margin-bottom: 10px;
+        }
+        .big-cta {
+            display: inline-block;
+            background: #e11d48;
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 20px 0;
+        }
+        .benefit {
+            display: flex;
+            align-items: flex-start;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        .benefit-icon {
+            font-size: 20px;
+            margin-right: 15px;
+            margin-top: 2px;
+        }
+        .social-proof {
+            background: #ecfdf5;
+            border-left: 4px solid #10b981;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">La Carta</div>
+        </div>
+
+        <div class="greeting">
+            {{userName}}, your VIP dining experience awaits! ✨
+        </div>
+
+        <p>You've had a few days to explore La Carta, and we're excited to help you experience dining the way it should be – effortless, perfectly timed, and absolutely delicious.</p>
+
+        <div class="highlight-box">
+            <div class="highlight-title">🎯 Ready for the 90-Second VIP Journey?</div>
+            <p style="margin: 10px 0;">Reserve → Pre-order → Pre-pay → Arrive → Dine</p>
+            <p style="margin: 0; color: #6b7280; font-size: 14px;">It really is that simple.</p>
+        </div>
+
+        <p>Here's what makes your first La Carta reservation special:</p>
+
+        <div class="benefit">
+            <span class="benefit-icon">⚡</span>
+            <div>
+                <strong>Zero waiting:</strong> Your table is ready, your order is placed, payment is done. Just show up and enjoy.
+            </div>
+        </div>
+
+        <div class="benefit">
+            <span class="benefit-icon">🎯</span>
+            <div>
+                <strong>Perfect timing:</strong> Your food arrives within 5 minutes of being seated. No guessing, no delays.
+            </div>
+        </div>
+
+        <div class="benefit">
+            <span class="benefit-icon">🛡️</span>
+            <div>
+                <strong>No surprises:</strong> Total cost including tip is locked in. Your card is charged once, securely.
+            </div>
+        </div>
+
+        <div class="benefit">
+            <span class="benefit-icon">👥</span>
+            <div>
+                <strong>VIP treatment:</strong> Staff know you're coming, what you ordered, and any preferences you've shared.
+            </div>
+        </div>
+
+        <div class="social-proof">
+            💬 "I couldn't believe how smooth it was. Reserved at 2pm, ate at 7pm, and my pasta carbonara was perfect temperature when I sat down. This is the future of dining." 
+            <br><span style="color: #6b7280; font-size: 14px;">– Sarah M., La Carta member since last month</span>
+        </div>
+
+        <p>Ready to experience dining without the friction? Pick any of our partner restaurants and see why thousands of diners are making La Carta their go-to for special meals.</p>
+
+        <div style="text-align: center;">
+            <a href="{{appUrl}}/restaurants" class="big-cta">Make Your First Reservation</a>
+        </div>
+
+        <p style="text-align: center; color: #6b7280; font-size: 14px; margin-top: 20px;">
+            ⭐ Average rating: 4.9/5 stars from 10,000+ reservations
+        </p>
+
+        <p>Questions about the process? Reply to this email – we're here to make your first La Carta experience absolutely perfect.</p>
+
+        <div class="footer">
+            <p>Here when you're ready,<br>The La Carta Team</p>
+            <p style="margin-top: 15px;">
+                <a href="{{appUrl}}" style="color: #6b7280; text-decoration: none;">La Carta</a> • 
+                <a href="{{supportEmail}}" style="color: #6b7280; text-decoration: none;">Support</a>
+            </p>
+            <p style="margin-top: 10px; font-size: 12px;">
+                © {{year}} La Carta. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

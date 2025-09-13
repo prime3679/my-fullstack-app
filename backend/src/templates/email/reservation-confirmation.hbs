@@ -1,0 +1,311 @@
+{{!-- Subject: Reservation confirmed for {{restaurantName}} --}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservation Confirmation - {{restaurantName}}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e11d48;
+            margin-bottom: 5px;
+        }
+        .confirmed-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .greeting {
+            font-size: 24px;
+            color: #111827;
+            margin-bottom: 20px;
+        }
+        .reservation-card {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 25px 0;
+            border: 2px solid #0ea5e9;
+        }
+        .restaurant-name {
+            font-size: 22px;
+            font-weight: 600;
+            color: #0c4a6e;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 12px 0;
+            padding: 10px 0;
+            border-bottom: 1px solid #bae6fd;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #0c4a6e;
+            font-size: 14px;
+        }
+        .detail-value {
+            font-weight: 500;
+            color: #1e293b;
+            text-align: right;
+        }
+        .order-summary {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .order-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 15px;
+        }
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 8px 0;
+        }
+        .order-item-name {
+            flex: 1;
+            color: #374151;
+        }
+        .order-item-price {
+            font-weight: 500;
+            color: #1f2937;
+        }
+        .total-row {
+            border-top: 2px solid #e5e7eb;
+            margin-top: 15px;
+            padding-top: 15px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .checkin-info {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        .checkin-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 10px;
+        }
+        .qr-placeholder {
+            width: 120px;
+            height: 120px;
+            background: white;
+            border: 2px dashed #d97706;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px auto;
+            color: #92400e;
+            font-size: 12px;
+            text-align: center;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .btn-primary {
+            background: #e11d48;
+            color: white;
+        }
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">La Carta</div>
+            <div class="confirmed-badge">✓ RESERVATION CONFIRMED</div>
+        </div>
+
+        <div class="greeting">
+            All set, {{userName}}! 🎉
+        </div>
+
+        <p>Your reservation is confirmed and your pre-order is locked in. Everything is taken care of – just show up and enjoy an incredible meal!</p>
+
+        <div class="reservation-card">
+            <div class="restaurant-name">{{restaurantName}}</div>
+            
+            <div class="detail-row">
+                <div class="detail-label">📅 Date & Time</div>
+                <div class="detail-value">{{reservationDate}} at {{reservationTime}}</div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-label">👥 Party Size</div>
+                <div class="detail-value">{{partySize}} {{#if (gt partySize 1)}}guests{{else}}guest{{/if}}</div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-label">🪑 Table</div>
+                <div class="detail-value">{{#if tableNumber}}Table {{tableNumber}}{{else}}Assigned upon arrival{{/if}}</div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-label">📍 Address</div>
+                <div class="detail-value">{{restaurantAddress}}</div>
+            </div>
+
+            {{#if specialRequests}}
+            <div class="detail-row">
+                <div class="detail-label">📝 Special Requests</div>
+                <div class="detail-value">{{specialRequests}}</div>
+            </div>
+            {{/if}}
+        </div>
+
+        {{#if hasPreOrder}}
+        <div class="order-summary">
+            <div class="order-title">🍽️ Your Pre-Order</div>
+            
+            {{#each orderItems}}
+            <div class="order-item">
+                <div class="order-item-name">
+                    {{quantity}}x {{name}}
+                    {{#if modifiers}}<br><small style="color: #6b7280;">{{modifiers}}</small>{{/if}}
+                </div>
+                <div class="order-item-price">${{price}}</div>
+            </div>
+            {{/each}}
+            
+            <div class="order-item total-row">
+                <div class="order-item-name">Subtotal</div>
+                <div class="order-item-price">${{subtotal}}</div>
+            </div>
+            
+            {{#if tax}}
+            <div class="order-item">
+                <div class="order-item-name">Tax</div>
+                <div class="order-item-price">${{tax}}</div>
+            </div>
+            {{/if}}
+            
+            {{#if tip}}
+            <div class="order-item">
+                <div class="order-item-name">Tip ({{tipPercent}}%)</div>
+                <div class="order-item-price">${{tip}}</div>
+            </div>
+            {{/if}}
+            
+            <div class="order-item total-row" style="font-size: 18px; color: #e11d48;">
+                <div class="order-item-name">Total Paid</div>
+                <div class="order-item-price">${{totalAmount}}</div>
+            </div>
+        </div>
+        {{/if}}
+
+        <div class="checkin-info">
+            <div class="checkin-title">📱 Check-in Instructions</div>
+            <p style="margin: 10px 0; color: #1f2937;">When you arrive, scan this QR code at your table to let the kitchen know you're seated. Your meal will be perfectly timed to arrive within 5 minutes!</p>
+            
+            <div class="qr-placeholder">
+                QR Code<br>
+                (Scan at table)
+            </div>
+            
+            <p style="margin: 10px 0; color: #6b7280; font-size: 14px; text-align: center;">
+                <strong>Reservation ID:</strong> {{reservationId}}
+            </p>
+        </div>
+
+        <div class="action-buttons">
+            <a href="{{appUrl}}/reservations/{{reservationId}}" class="btn btn-primary">View Reservation</a>
+            <a href="{{appUrl}}/support/contact" class="btn btn-secondary">Need Help?</a>
+        </div>
+
+        <p><strong>What to expect:</strong></p>
+        <ul style="color: #374151; padding-left: 20px;">
+            <li>Arrive at your reservation time – your table will be ready</li>
+            <li>Scan the QR code when you're seated to start the kitchen timer</li>
+            <li>Your pre-ordered meal will arrive within 5 minutes, perfectly prepared</li>
+            <li>Payment is complete – just enjoy your dining experience!</li>
+            <li>Rate your experience afterward to help us keep improving</li>
+        </ul>
+
+        {{#if restaurantPhone}}
+        <p style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <strong>Restaurant Contact:</strong> <a href="tel:{{restaurantPhone}}" style="color: #e11d48;">{{restaurantPhone}}</a>
+            <br><small style="color: #6b7280;">For same-day changes or special requests, call the restaurant directly.</small>
+        </p>
+        {{/if}}
+
+        <p>We can't wait for you to experience the La Carta difference. Enjoy your meal!</p>
+
+        <div class="footer">
+            <p>See you soon,<br>The La Carta Team</p>
+            <p style="margin: 20px 0;">
+                <strong>{{restaurantName}}</strong><br>
+                <a href="{{appUrl}}/reservations/{{reservationId}}" style="color: #6b7280; text-decoration: none;">Manage Reservation</a> • 
+                <a href="{{supportEmail}}" style="color: #6b7280; text-decoration: none;">Support</a>
+            </p>
+            <p style="font-size: 12px;">
+                © {{year}} La Carta. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,11 +1,22 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import websocket from '@fastify/websocket';
 import { db } from './lib/db';
 import { reservationRoutes } from './routes/reservations';
 import { restaurantRoutes } from './routes/restaurants';
 import { menuRoutes } from './routes/menu';
 import { preOrderRoutes } from './routes/preorders';
+import { kitchenRoutes } from './routes/kitchen';
+import { checkinRoutes } from './routes/checkin';
+import { authRoutes } from './routes/auth';
+import { staffRoutes } from './routes/staff';
+// import { paymentRoutes } from './routes/payments';
+import { WebSocketManager, websocketManager } from './lib/websocketManager';
+import { requestLoggingPlugin } from './lib/middleware';
+import { SocialAuthService } from './lib/socialAuth';
+import { emailService } from './lib/emailService';
+import Logger from './lib/logger';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -24,12 +35,35 @@ async function start() {
       origin: process.env.FRONTEND_URL || 'http://localhost:3000',
       credentials: true
     });
+    await fastify.register(websocket);
+    
+    // Register logging middleware
+    await fastify.register(requestLoggingPlugin);
+
+    // Initialize social authentication
+    SocialAuthService.initialize();
+    
+    // Test email service connection
+    const emailConnected = await emailService.testConnection();
+    Logger.info('Email service initialization', { connected: emailConnected });
 
     // Register routes
+    await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
+    await fastify.register(staffRoutes, { prefix: '/api/v1/staff' });
     await fastify.register(restaurantRoutes, { prefix: '/api/v1/restaurants' });
     await fastify.register(reservationRoutes, { prefix: '/api/v1/reservations' });
     await fastify.register(menuRoutes, { prefix: '/api/v1/menu' });
     await fastify.register(preOrderRoutes, { prefix: '/api/v1/preorders' });
+    await fastify.register(kitchenRoutes, { prefix: '/api/v1/kitchen' });
+    await fastify.register(checkinRoutes, { prefix: '/api/v1/checkin' });
+    // await fastify.register(paymentRoutes, { prefix: '/api/v1/payments' });
+
+    // Initialize WebSocket manager
+    const wsManager = new WebSocketManager(fastify);
+    await wsManager.initialize();
+    
+    // Export websocket manager for use in other modules
+    (global as any).websocketManager = wsManager;
 
     // Health check endpoint
     fastify.get('/api/health', async (request, reply) => {
@@ -104,7 +138,17 @@ async function start() {
 
     // Error handler
     fastify.setErrorHandler((error, request, reply) => {
-      console.error(error);
+      Logger.error('Unhandled server error', {
+        requestId: request.context?.requestId,
+        error: {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        },
+        ip: request.context?.ip,
+        userAgent: request.context?.userAgent
+      });
+      
       reply.code(500).send({ 
         error: 'Internal server error',
         message: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -113,9 +157,19 @@ async function start() {
 
     // Start server
     await fastify.listen({ port: Number(PORT), host: '0.0.0.0' });
-    console.log(`🚀 La Carta server running on http://localhost:${PORT}`);
+    Logger.info(`Server started successfully on port ${PORT}`, {
+      port: PORT,
+      environment: process.env.NODE_ENV || 'development',
+      action: 'SERVER_STARTED'
+    });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    Logger.error('Failed to start server', {
+      error: {
+        name: (error as Error).name,
+        message: (error as Error).message,
+        stack: (error as Error).stack
+      }
+    });
     process.exit(1);
   }
 }
@@ -123,13 +177,19 @@ async function start() {
 // Handle graceful shutdown
 const gracefulShutdown = async () => {
   try {
-    console.log('🔄 Shutting down server...');
+    Logger.info('Shutting down server gracefully', { action: 'SERVER_SHUTDOWN_INITIATED' });
     await db.$disconnect();
     await fastify.close();
-    console.log('✅ Server shut down successfully');
+    Logger.info('Server shut down successfully', { action: 'SERVER_SHUTDOWN_COMPLETED' });
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error during shutdown:', error);
+    Logger.error('Error during server shutdown', {
+      error: {
+        name: (error as Error).name,
+        message: (error as Error).message,
+        stack: (error as Error).stack
+      }
+    });
     process.exit(1);
   }
 };
