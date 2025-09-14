@@ -40,12 +40,13 @@ export default function ReservationForm({ restaurantId, onSubmit }: ReservationF
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
             <Calendar className="inline w-4 h-4 mr-1" />
             Date
           </label>
           <input
             type="date"
+            id="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -54,11 +55,12 @@ export default function ReservationForm({ restaurantId, onSubmit }: ReservationF
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="time" className="block text-sm font-medium text-gray-700 mb-1">
             <Clock className="inline w-4 h-4 mr-1" />
             Time
           </label>
           <select
+            id="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -79,11 +81,12 @@ export default function ReservationForm({ restaurantId, onSubmit }: ReservationF
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="party-size" className="block text-sm font-medium text-gray-700 mb-1">
           <Users className="inline w-4 h-4 mr-1" />
           Party Size
         </label>
         <select
+          id="party-size"
           value={partySize}
           onChange={(e) => setPartySize(parseInt(e.target.value))}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -99,11 +102,12 @@ export default function ReservationForm({ restaurantId, onSubmit }: ReservationF
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
             Name
           </label>
           <input
             type="text"
+            id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -112,11 +116,12 @@ export default function ReservationForm({ restaurantId, onSubmit }: ReservationF
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
             Email
           </label>
           <input
             type="email"
+            id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -126,11 +131,12 @@ export default function ReservationForm({ restaurantId, onSubmit }: ReservationF
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
           Phone
         </label>
         <input
           type="tel"
+          id="phone"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -139,10 +145,11 @@ export default function ReservationForm({ restaurantId, onSubmit }: ReservationF
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="special-requests" className="block text-sm font-medium text-gray-700 mb-1">
           Special Requests (Optional)
         </label>
         <textarea
+          id="special-requests"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}

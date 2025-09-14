@@ -356,9 +356,10 @@ export default function MenuPage() {
                       {group.modifiers
                         .filter(mod => mod.isAvailable)
                         .map(modifier => (
-                          <label key={modifier.id} className="flex items-center space-x-3 cursor-pointer">
+                          <label key={modifier.id} className="flex items-center space-x-3 cursor-pointer" htmlFor={`modifier-${modifier.id}`}>
                             <input
                               type="radio"
+                              id={`modifier-${modifier.id}`}
                               name={group.id}
                               value={modifier.id}
                               checked={itemModifiers[group.id] === modifier.id}
@@ -381,10 +382,11 @@ export default function MenuPage() {
 
                 {/* Special instructions */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium">
+                  <label htmlFor="special-instructions" className="block text-sm font-medium">
                     Special instructions (optional)
                   </label>
                   <Textarea
+                    id="special-instructions"
                     value={itemNotes}
                     onChange={(e) => setItemNotes(e.target.value)}
                     placeholder="Any special requests or modifications..."

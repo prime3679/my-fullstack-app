@@ -21,12 +21,6 @@ export interface AvailabilityQuery {
 export class ReservationService {
   
   async checkAvailability({ restaurantId, partySize, date }: AvailabilityQuery) {
-    // Parse date explicitly to avoid timezone issues
-    const [year, month, day] = date.split('-').map(Number);
-    const startDate = new Date(year, month - 1, day); // month is 0-based
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 1);
-    
     // Get restaurant's capacity rules and operating hours
     const restaurant = await db.restaurant.findUnique({
       where: { id: restaurantId },
@@ -43,20 +37,43 @@ export class ReservationService {
       throw new Error('Restaurant not found');
     }
 
-    // Calculate total capacity
+    // Use restaurant's timezone, fallback to UTC
+    const timezone = restaurant.timezone || 'UTC';
+    
+    // Parse date in restaurant's timezone
+    const [year, month, day] = date.split('-').map(Number);
+    
+    // Create date range for the specific day in the restaurant's timezone
+    const startOfDay = new Date(`${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T00:00:00.000Z`);
+    const endOfDay = new Date(`${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T23:59:59.999Z`);
+
+    // Calculate total capacity (count tables that can accommodate the party size)
     const totalCapacity = restaurant.locations.reduce((total, location) => {
       return total + location.tables.reduce((locationTotal, table) => {
         return locationTotal + (table.seats >= partySize ? 1 : 0);
       }, 0);
     }, 0);
 
+    if (totalCapacity === 0) {
+      return {
+        date,
+        partySize,
+        restaurant: {
+          id: restaurant.id,
+          name: restaurant.name,
+          slug: restaurant.slug
+        },
+        availableSlots: []
+      };
+    }
+
     // Get existing reservations for the date
     const existingReservations = await db.reservation.findMany({
       where: {
         restaurantId,
         startAt: {
-          gte: startDate,
-          lt: endDate
+          gte: startOfDay,
+          lte: endOfDay
         },
         status: {
           in: [ReservationStatus.BOOKED, ReservationStatus.CHECKED_IN]
@@ -64,27 +81,34 @@ export class ReservationService {
       }
     });
 
-    // Generate available time slots (simplified - every 30 minutes from 5 PM to 10 PM)
+    // Generate available time slots - every 30 minutes from 5 PM to 10 PM
     const availableSlots = [];
     const baseHour = 17; // 5 PM
     const endHour = 22; // 10 PM
 
     for (let hour = baseHour; hour < endHour; hour++) {
       for (let minutes of [0, 30]) {
-        const slotTime = new Date(startDate);
-        slotTime.setHours(hour, minutes, 0, 0);
+        // Create slot time in UTC for consistency
+        const slotTime = new Date(`${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00.000Z`);
 
-        // Count reservations at this exact time slot
-        const reservationsAtSlot = existingReservations.filter(res => 
-          res.startAt.getTime() === slotTime.getTime()
-        ).length;
+        // Count reservations within 30 minutes of this slot (to account for overlapping reservations)
+        const slotStart = new Date(slotTime.getTime());
+        const slotEnd = new Date(slotTime.getTime() + 30 * 60 * 1000); // 30 minutes later
 
-        // Simple availability check - if we have capacity
-        if (reservationsAtSlot < totalCapacity) {
+        const conflictingReservations = existingReservations.filter(res => {
+          const reservationStart = res.startAt;
+          const reservationEnd = new Date(reservationStart.getTime() + 90 * 60 * 1000); // Assume 90 min dining time
+          
+          // Check if reservations overlap with this time slot
+          return (reservationStart < slotEnd && reservationEnd > slotStart);
+        }).length;
+
+        // Check if we have available capacity for this slot
+        if (conflictingReservations < totalCapacity) {
           availableSlots.push({
             time: slotTime.toISOString(),
             available: true,
-            capacity: totalCapacity - reservationsAtSlot
+            capacity: totalCapacity - conflictingReservations
           });
         }
       }

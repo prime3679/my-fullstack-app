@@ -151,7 +151,7 @@ export function SMSVerification({ phone, onSuccess, onBack }: SMSVerificationPro
       <div className="space-y-6">
         {/* Verification Code Input */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
+          <label htmlFor="verification-code-0" className="block text-sm font-medium text-gray-700 mb-3 text-center">
             Enter verification code
           </label>
           <div className="flex justify-center space-x-3" onPaste={handlePaste}>
@@ -160,6 +160,7 @@ export function SMSVerification({ phone, onSuccess, onBack }: SMSVerificationPro
                 key={index}
                 ref={(el) => (inputRefs.current[index] = el)}
                 type="text"
+                id={`verification-code-${index}`}
                 inputMode="numeric"
                 maxLength={1}
                 value={digit}
@@ -167,6 +168,7 @@ export function SMSVerification({ phone, onSuccess, onBack }: SMSVerificationPro
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 className="w-12 h-12 text-center text-xl font-bold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-colors"
                 disabled={isLoading}
+                aria-label={`Verification code digit ${index + 1}`}
               />
             ))}
           </div>

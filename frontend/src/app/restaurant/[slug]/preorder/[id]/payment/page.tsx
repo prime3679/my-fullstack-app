@@ -164,11 +164,12 @@ export default function PreOrderPaymentPage() {
                 
                 {/* Custom tip input */}
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">Custom:</span>
+                  <label htmlFor="custom-tip" className="text-sm text-gray-600">Custom:</label>
                   <div className="flex items-center">
                     <span className="text-gray-600">$</span>
                     <input
                       type="number"
+                      id="custom-tip"
                       min="0"
                       step="0.01"
                       value={tip.toFixed(2)}
