@@ -140,12 +140,9 @@ describe('Server Integration Tests', () => {
         data: {
           userId: user.id,
           restaurantId: restaurant.id,
-          date: reservationDate,
           startAt: reservationDate,
-          endAt: new Date(reservationDate.getTime() + 2 * 60 * 60 * 1000),
           partySize: 4,
           status: 'CONFIRMED',
-          notes: 'Anniversary dinner',
         },
       });
 
@@ -175,7 +172,7 @@ describe('Server Integration Tests', () => {
           reservationId: reservation.id,
           userId: user.id,
           restaurantId: restaurant.id,
-          status: 'PENDING',
+          status: 'DRAFT',
           subtotal: 12000,
           tax: 1080,
           tip: 2400,
@@ -226,9 +223,7 @@ describe('Server Integration Tests', () => {
             data: {
               userId: user.id,
               restaurantId: restaurant.id,
-              date: new Date(),
               startAt: new Date(),
-              endAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
               partySize: 2,
               status: 'CONFIRMED',
             },
@@ -256,9 +251,7 @@ describe('Server Integration Tests', () => {
           data: {
             userId: user.id,
             restaurantId: restaurant.id,
-            date: new Date(),
             startAt: new Date(Date.now() + i * 60 * 60 * 1000),
-            endAt: new Date(Date.now() + (i + 2) * 60 * 60 * 1000),
             partySize: 2,
             status: 'CONFIRMED',
           },

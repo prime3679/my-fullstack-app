@@ -46,7 +46,7 @@ export async function setupSecurity(fastify: FastifyInstance, config: SecurityCo
         callback(null, true);
       } else {
         Logger.warn('CORS blocked request', { origin });
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error('Not allowed by CORS'), false);
       }
     },
     credentials: true,

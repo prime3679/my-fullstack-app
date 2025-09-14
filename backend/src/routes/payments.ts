@@ -40,7 +40,7 @@ export async function paymentRoutes(fastify: FastifyInstance) {
         });
       }
 
-      if (preOrder.status !== 'DRAFT' && preOrder.status !== 'PENDING') {
+      if (preOrder.status !== 'DRAFT' && preOrder.status !== 'AUTHORIZED') {
         return reply.code(400).send({
           error: 'Pre-order is not in a payable state',
         });
