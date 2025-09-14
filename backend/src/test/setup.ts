@@ -55,7 +55,6 @@ export const createTestReservation = async (userId: string, restaurantId: string
       userId,
       restaurantId,
       startAt: data?.startAt || new Date(),
-      endAt: data?.endAt || new Date(Date.now() + 2 * 60 * 60 * 1000),
       partySize: data?.partySize || 2,
       status: data?.status || 'CONFIRMED',
     },
