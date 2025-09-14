@@ -11,30 +11,40 @@ import { kitchenRoutes } from './routes/kitchen';
 import { checkinRoutes } from './routes/checkin';
 import { authRoutes } from './routes/auth';
 import { staffRoutes } from './routes/staff';
-// import { paymentRoutes } from './routes/payments';
+import { paymentRoutes } from './routes/payments';
 import { WebSocketManager, websocketManager } from './lib/websocketManager';
 import { requestLoggingPlugin } from './lib/middleware';
 import { SocialAuthService } from './lib/socialAuth';
 import { emailService } from './lib/emailService';
+import { setupSecurity } from './lib/security';
 import Logger from './lib/logger';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const fastify = Fastify({
-  logger: true
+  logger: true,
+  trustProxy: true, // Enable when behind proxy/load balancer
 });
 
 const PORT = process.env.PORT || 3001;
+const ENV = process.env.NODE_ENV || 'development';
 
 async function start() {
   try {
-    // Register plugins
-    await fastify.register(helmet);
-    await fastify.register(cors, {
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-      credentials: true
+    // Setup comprehensive security
+    await setupSecurity(fastify, {
+      environment: ENV as 'development' | 'production' | 'test',
+      corsOrigins: [
+        process.env.FRONTEND_URL || 'http://localhost:3000',
+        'http://localhost:3000',
+        'https://*.ngrok-free.app',
+        'https://*.ngrok.io'
+      ],
+      rateLimitMax: ENV === 'production' ? 100 : 1000,
+      rateLimitTimeWindow: '1 minute'
     });
+
     await fastify.register(websocket);
     
     // Register logging middleware
@@ -56,7 +66,7 @@ async function start() {
     await fastify.register(preOrderRoutes, { prefix: '/api/v1/preorders' });
     await fastify.register(kitchenRoutes, { prefix: '/api/v1/kitchen' });
     await fastify.register(checkinRoutes, { prefix: '/api/v1/checkin' });
-    // await fastify.register(paymentRoutes, { prefix: '/api/v1/payments' });
+    await fastify.register(paymentRoutes, { prefix: '/api/v1/payments' });
 
     // Initialize WebSocket manager
     const wsManager = new WebSocketManager(fastify);
