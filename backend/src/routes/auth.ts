@@ -98,7 +98,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         data: {
           phone,
           name,
-          email: email || null,
+          email: email || `${phone}@phone.temp`,
           hashedPassword,
           marketingOptIn,
           restaurantId: restaurantId || null,
@@ -158,7 +158,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           await emailService.startWelcomeSequence(welcomeContext);
           Logger.info('Welcome email sequence started', { userId: user.id });
         } catch (error) {
-          Logger.error('Failed to start welcome email sequence', { error, userId: user.id });
+          Logger.error('Failed to start welcome email sequence', { error: formatError(error), userId: user.id });
           // Don't fail signup if email fails
         }
       }
@@ -283,7 +283,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       }).parse(request.body);
 
       // Check if user exists
-      const existingUser = await db.user.findUnique({ where: { phone } });
+      const existingUser = await db.user.findFirst({ where: { phone } });
       if (existingUser) {
         return reply.code(409).send({ error: 'Phone number already registered' });
       }
@@ -293,6 +293,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         data: {
           phone,
           name,
+          email: `${phone}@phone.temp`,
           role: 'DINER',
           marketingOptIn: false
         }
@@ -333,7 +334,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ error: 'Invalid verification code' });
       }
 
-      const user = await db.user.findUnique({ 
+      const user = await db.user.findFirst({ 
         where: { phone },
         include: { dinerProfile: true }
       });
@@ -366,7 +367,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           name: user.name,
           phone: user.phone,
           role: user.role,
-          dinerProfile: user.dinerProfile
+          dinerProfile: (user as any).dinerProfile
         },
         token
       };
@@ -477,7 +478,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           await emailService.startWelcomeSequence(welcomeContext);
           Logger.info('Welcome email sequence started for social user', { userId: user.id, provider: socialProfile.provider });
         } catch (error) {
-          Logger.error('Failed to start welcome email sequence for social user', { error, userId: user.id });
+          Logger.error('Failed to start welcome email sequence for social user', { error: formatError(error), userId: user.id });
           // Don't fail login if email fails
         }
       }
@@ -535,7 +536,7 @@ export async function authRoutes(fastify: FastifyInstance) {
   fastify.get('/google/callback', (request, reply) => {
     passport.authenticate('google', { 
       failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=google_auth_failed` 
-    }, async (err, user) => {
+    }, async (err: any, user: any) => {
       if (err || !user) {
         Logger.error('Google OAuth callback error', { err });
         return reply.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=google_auth_failed`);
@@ -562,7 +563,7 @@ export async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/apple/callback', (request, reply) => {
     passport.authenticate('apple', { 
       failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=apple_auth_failed` 
-    }, async (err, user) => {
+    }, async (err: any, user: any) => {
       if (err || !user) {
         Logger.error('Apple OAuth callback error', { err });
         return reply.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=apple_auth_failed`);

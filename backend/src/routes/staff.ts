@@ -5,6 +5,7 @@ import { Logger } from '../lib/logger';
 import { emailService } from '../lib/emailService';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { formatError } from '../utils/formatError';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key_change_in_production';
 
@@ -124,7 +125,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
           email,
           name,
           role,
-          phone,
+          phone: phone || undefined,
           hashedPassword,
           restaurantId: manager.restaurantId,
           marketingOptIn: false
@@ -160,7 +161,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         );
         Logger.info('Staff invitation email sent', { staffUserId: staffUser.id, email });
       } catch (error) {
-        Logger.error('Failed to send staff invitation email', { error, staffUserId: staffUser.id, email });
+        Logger.error('Failed to send staff invitation email', { error: formatError(error), staffUserId: staffUser.id, email });
         // Don't fail the invitation if email fails
       }
 
@@ -189,14 +190,14 @@ export async function staffRoutes(fastify: FastifyInstance) {
       });
       
     } catch (error) {
-      Logger.error('Error inviting staff member', { error });
+      Logger.error('Error inviting staff member', { error: formatError(error) });
       Logger.performance('/staff/invite', 'POST', Date.now() - start);
       
       if (error instanceof z.ZodError) {
         return reply.code(400).send({ 
           success: false, 
           error: 'Invalid request data',
-          details: error.errors
+          details: (error as any).errors
         });
       }
       
@@ -209,7 +210,9 @@ export async function staffRoutes(fastify: FastifyInstance) {
     const start = Date.now();
     
     try {
-      const { password, phone, preferences = {} } = staffOnboardingSchema.parse(request.body);
+      const parsedData = staffOnboardingSchema.parse(request.body);
+      const { password, phone } = parsedData;
+      const preferences = parsedData.preferences || {};
       const authHeader = request.headers.authorization;
       
       if (!authHeader) {
@@ -237,8 +240,8 @@ export async function staffRoutes(fastify: FastifyInstance) {
         where: { id: userId },
         data: {
           hashedPassword,
-          phone,
-          marketingOptIn: preferences.marketingOptIn || false
+          phone: phone || undefined,
+          marketingOptIn: (preferences as any)?.marketingOptIn || false
         },
         include: {
           restaurant: true
@@ -250,7 +253,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         data: {
           kind: 'STAFF_ONBOARDED',
           actorId: userId,
-          restaurantId: user.restaurantId,
+          restaurantId: user.restaurantId || '',
           payloadJson: {
             role: user.role,
             preferences
@@ -261,7 +264,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       Logger.info('Staff onboarding completed', {
         userId,
         role: user.role,
-        restaurantId: user.restaurantId
+        restaurantId: user.restaurantId || ''
       });
       
       Logger.performance('/staff/onboard', 'POST', Date.now() - start);
@@ -283,14 +286,14 @@ export async function staffRoutes(fastify: FastifyInstance) {
       });
       
     } catch (error) {
-      Logger.error('Error completing staff onboarding', { error });
+      Logger.error('Error completing staff onboarding', { error: formatError(error) });
       Logger.performance('/staff/onboard', 'POST', Date.now() - start);
       
       if (error instanceof z.ZodError) {
         return reply.code(400).send({ 
           success: false, 
           error: 'Invalid request data',
-          details: error.errors
+          details: (error as any).errors
         });
       }
       
@@ -353,7 +356,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       });
       
     } catch (error) {
-      Logger.error('Error fetching staff list', { error });
+      Logger.error('Error fetching staff list', { error: formatError(error) });
       Logger.performance('/staff/list', 'GET', Date.now() - start);
       return reply.code(500).send({ success: false, error: 'Internal server error' });
     }
@@ -387,7 +390,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         where: { id: userId },
         data: {
           name: updateData.name,
-          phone: updateData.phone,
+          phone: updateData.phone || undefined,
           marketingOptIn: updateData.preferences?.marketingOptIn
         },
         include: {
@@ -411,14 +414,14 @@ export async function staffRoutes(fastify: FastifyInstance) {
       });
       
     } catch (error) {
-      Logger.error('Error updating staff profile', { error });
+      Logger.error('Error updating staff profile', { error: formatError(error) });
       Logger.performance('/staff/profile', 'PATCH', Date.now() - start);
       
       if (error instanceof z.ZodError) {
         return reply.code(400).send({ 
           success: false, 
           error: 'Invalid request data',
-          details: error.errors
+          details: (error as any).errors
         });
       }
       
@@ -460,7 +463,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         { 
           userId: user.id, 
           role: user.role, 
-          restaurantId: user.restaurantId 
+          restaurantId: user.restaurantId || '' 
         },
         JWT_SECRET,
         { expiresIn: '7d' }
@@ -471,7 +474,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
         data: {
           kind: 'STAFF_LOGIN',
           actorId: user.id,
-          restaurantId: user.restaurantId,
+          restaurantId: user.restaurantId || '',
           payloadJson: {
             role: user.role,
             method: 'EMAIL_PASSWORD'
@@ -482,7 +485,7 @@ export async function staffRoutes(fastify: FastifyInstance) {
       Logger.info('Staff login successful', {
         userId: user.id,
         role: user.role,
-        restaurantId: user.restaurantId
+        restaurantId: user.restaurantId || ''
       });
       
       Logger.performance('/staff/login', 'POST', Date.now() - start);
@@ -506,14 +509,14 @@ export async function staffRoutes(fastify: FastifyInstance) {
       });
       
     } catch (error) {
-      Logger.error('Error during staff login', { error });
+      Logger.error('Error during staff login', { error: formatError(error) });
       Logger.performance('/staff/login', 'POST', Date.now() - start);
       
       if (error instanceof z.ZodError) {
         return reply.code(400).send({ 
           success: false, 
           error: 'Invalid request data',
-          details: error.errors
+          details: (error as any).errors
         });
       }
       

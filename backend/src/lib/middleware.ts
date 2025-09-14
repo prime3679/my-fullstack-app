@@ -17,8 +17,12 @@ declare module 'fastify' {
 }
 
 export async function requestLoggingPlugin(fastify: FastifyInstance) {
-  // Add request context
-  fastify.decorateRequest('context', {} as RequestContext);
+  // Add request context using getter/setter for reference types
+  fastify.decorateRequest('context', {
+    getter() {
+      return {} as RequestContext;
+    }
+  });
   
   // Pre-handler hook to initialize context and log incoming requests
   fastify.addHook('preHandler', async (request: FastifyRequest, reply: FastifyReply) => {

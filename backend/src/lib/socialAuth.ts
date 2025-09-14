@@ -62,10 +62,9 @@ export class SocialAuthService {
         clientID: process.env.APPLE_CLIENT_ID,
         teamID: process.env.APPLE_TEAM_ID,
         keyID: process.env.APPLE_KEY_ID,
-        privateKey: process.env.APPLE_PRIVATE_KEY,
         callbackURL: process.env.APPLE_CALLBACK_URL || 'http://localhost:3001/api/v1/auth/apple/callback',
         scope: ['email', 'name']
-      }, async (accessToken: any, refreshToken: any, idToken: any, profile: any, done: any) => {
+      } as any, async (accessToken: any, refreshToken: any, idToken: any, profile: any, done: any) => {
         try {
           // Apple provides minimal profile data
           const socialProfile: SocialProfile = {
@@ -177,7 +176,7 @@ export class SocialAuthService {
 
     } catch (error) {
       Logger.error('Social authentication failed', {
-        error,
+        error: formatError(error),
         email: socialProfile.email,
         provider: socialProfile.provider
       });
@@ -261,7 +260,7 @@ export class SocialAuthService {
       return user;
     } catch (error) {
       Logger.error('Error in findOrCreateUser', { 
-        error, 
+        error: formatError(error), 
         socialProfile: { 
           provider: socialProfile.provider, 
           email: socialProfile.email 
