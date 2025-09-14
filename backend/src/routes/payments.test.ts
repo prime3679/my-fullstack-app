@@ -219,7 +219,7 @@ describe('Payment Routes', () => {
         where: { id: 'res_123' },
         data: {
           hasPrepaid: true,
-          status: 'CONFIRMED',
+          status: 'BOOKED',
         },
       });
     });
@@ -256,7 +256,7 @@ describe('Payment Routes', () => {
       expect(body.data.status).toBe('canceled');
       expect(fastify.db.preOrder.update).toHaveBeenCalledWith({
         where: { id: 'order_123' },
-        data: { status: 'CANCELLED' },
+        data: { status: 'CLOSED' },
       });
     });
   });

@@ -133,7 +133,7 @@ describe('Reservation Routes', () => {
       const body = JSON.parse(response.body);
       expect(body.reservation.partySize).toBe(4);
       expect(body.reservation.notes).toBe('Birthday celebration');
-      expect(body.reservation.status).toBe('CONFIRMED');
+      expect(body.reservation.status).toBe('BOOKED');
     });
 
     it('should validate party size', async () => {
@@ -211,7 +211,7 @@ describe('Reservation Routes', () => {
 
     it('should update reservation status', async () => {
       const reservation = await createTestReservation(testUser.id, testRestaurant.id, {
-        status: 'CONFIRMED',
+        status: 'BOOKED',
       });
 
       const response = await fastify.inject({
@@ -221,13 +221,13 @@ describe('Reservation Routes', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          status: 'CANCELLED',
+          status: 'CANCELED',
         }),
       });
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body);
-      expect(body.reservation.status).toBe('CANCELLED');
+      expect(body.reservation.status).toBe('CANCELED');
     });
   });
 
@@ -247,7 +247,7 @@ describe('Reservation Routes', () => {
       const updated = await db.reservation.findUnique({
         where: { id: reservation.id },
       });
-      expect(updated?.status).toBe('CANCELLED');
+      expect(updated?.status).toBe('CANCELED');
     });
 
     it('should return 404 for non-existent reservation', async () => {
@@ -263,7 +263,7 @@ describe('Reservation Routes', () => {
   describe('POST /api/v1/reservations/:id/checkin', () => {
     it('should check in a reservation', async () => {
       const reservation = await createTestReservation(testUser.id, testRestaurant.id, {
-        status: 'CONFIRMED',
+        status: 'BOOKED',
       });
 
       const response = await fastify.inject({
@@ -285,7 +285,7 @@ describe('Reservation Routes', () => {
 
     it('should not allow check-in for cancelled reservation', async () => {
       const reservation = await createTestReservation(testUser.id, testRestaurant.id, {
-        status: 'CANCELLED',
+        status: 'CANCELED',
       });
 
       const response = await fastify.inject({

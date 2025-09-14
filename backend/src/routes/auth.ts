@@ -283,7 +283,14 @@ export async function authRoutes(fastify: FastifyInstance) {
       }).parse(request.body);
 
       // Check if user exists
-      const existingUser = await db.user.findFirst({ where: { phone } });
+      const existingUser = await db.user.findFirst({ 
+        where: {
+          OR: [
+            { phone },
+            { email: `${phone}@phone.temp` }
+          ]
+        }
+      });
       if (existingUser) {
         return reply.code(409).send({ error: 'Phone number already registered' });
       }
@@ -335,9 +342,17 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
 
       const user = await db.user.findFirst({ 
-        where: { phone },
-        include: { dinerProfile: true }
+        where: {
+          OR: [
+            { phone },
+            { email: `${phone}@phone.temp` }
+          ]
+        }
       });
+      
+      const dinerProfile = user ? await db.dinerProfile.findUnique({
+        where: { userId: user.id }
+      }) : null;
 
       if (!user) {
         return reply.code(404).send({ error: 'User not found' });
@@ -367,7 +382,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           name: user.name,
           phone: user.phone,
           role: user.role,
-          dinerProfile: (user as any).dinerProfile
+          dinerProfile: dinerProfile
         },
         token
       };
@@ -536,7 +551,7 @@ export async function authRoutes(fastify: FastifyInstance) {
   fastify.get('/google/callback', (request, reply) => {
     passport.authenticate('google', { 
       failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=google_auth_failed` 
-    }, async (err: any, user: any) => {
+    }, async (err: Error | null, user: any) => {
       if (err || !user) {
         Logger.error('Google OAuth callback error', { err });
         return reply.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=google_auth_failed`);
@@ -563,7 +578,7 @@ export async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/apple/callback', (request, reply) => {
     passport.authenticate('apple', { 
       failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=apple_auth_failed` 
-    }, async (err: any, user: any) => {
+    }, async (err: Error | null, user: any) => {
       if (err || !user) {
         Logger.error('Apple OAuth callback error', { err });
         return reply.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=apple_auth_failed`);

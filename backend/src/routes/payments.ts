@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { PaymentService } from '../services/paymentService';
 import { PreOrderService } from '../services/preOrderService';
+import { db } from '../lib/db';
 import Logger from '../lib/logger';
 
 const paymentService = new PaymentService();
@@ -31,8 +32,13 @@ export async function paymentRoutes(fastify: FastifyInstance) {
     try {
       const { preOrderId, tipPercent = 18 } = request.body;
 
-      // Get pre-order details
-      const preOrder = await preOrderService.getPreOrder(preOrderId);
+      // Get pre-order details with reservation info
+      const preOrder = await db.preOrder.findUnique({
+        where: { id: preOrderId },
+        include: {
+          reservation: true,
+        },
+      });
       
       if (!preOrder) {
         return reply.code(404).send({
@@ -54,9 +60,9 @@ export async function paymentRoutes(fastify: FastifyInstance) {
 
       // Get or create Stripe customer
       let customerId: string | undefined;
-      if (preOrder.userId) {
-        const user = await fastify.db.user.findUnique({
-          where: { id: preOrder.userId },
+      if (preOrder.reservation.userId) {
+        const user = await db.user.findUnique({
+          where: { id: preOrder.reservation.userId },
         });
 
         if (user) {
@@ -75,20 +81,29 @@ export async function paymentRoutes(fastify: FastifyInstance) {
         metadata: {
           preOrderId: preOrder.id,
           reservationId: preOrder.reservationId || '',
-          restaurantId: preOrder.restaurantId,
+          restaurantId: preOrder.reservation.restaurantId || '',
           subtotal: subtotal.toString(),
           tax: tax.toString(),
           tip: tip.toString(),
         },
       });
 
-      // Update pre-order with payment intent ID and calculated tip
-      await fastify.db.preOrder.update({
+      // Update pre-order with calculated tip and total
+      await db.preOrder.update({
         where: { id: preOrderId },
         data: {
-          paymentIntentId: paymentIntent.id,
           tip,
           total,
+        },
+      });
+      
+      // Store payment intent ID in a separate payment record
+      await db.payment.create({
+        data: {
+          preorderId: preOrderId,
+          stripePaymentIntentId: paymentIntent.id,
+          amount: total,
+          status: 'PENDING',
         },
       });
 
@@ -108,7 +123,11 @@ export async function paymentRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       Logger.error('Failed to create payment intent', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? { 
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
         preOrderId: request.body.preOrderId,
       });
 
@@ -128,7 +147,9 @@ export async function paymentRoutes(fastify: FastifyInstance) {
       const { tipPercent, preOrderId } = request.body;
 
       // Get pre-order to recalculate
-      const preOrder = await preOrderService.getPreOrder(preOrderId);
+      const preOrder = await db.preOrder.findUnique({
+        where: { id: preOrderId },
+      });
       
       if (!preOrder) {
         return reply.code(404).send({
@@ -149,7 +170,7 @@ export async function paymentRoutes(fastify: FastifyInstance) {
       );
 
       // Update pre-order
-      await fastify.db.preOrder.update({
+      await db.preOrder.update({
         where: { id: preOrderId },
         data: {
           tip,
@@ -172,7 +193,11 @@ export async function paymentRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       Logger.error('Failed to update payment intent', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? { 
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
         paymentIntentId: request.params.paymentIntentId,
       });
 
@@ -197,11 +222,10 @@ export async function paymentRoutes(fastify: FastifyInstance) {
 
       // Update reservation status if linked
       if (result.preOrder.reservationId) {
-        await fastify.db.reservation.update({
+        await db.reservation.update({
           where: { id: result.preOrder.reservationId },
           data: {
-            hasPrepaid: true,
-            status: 'CONFIRMED',
+            status: 'BOOKED',
           },
         });
       }
@@ -216,7 +240,11 @@ export async function paymentRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       Logger.error('Failed to confirm payment', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? { 
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
         body: request.body,
       });
 
@@ -241,15 +269,19 @@ export async function paymentRoutes(fastify: FastifyInstance) {
       );
 
       // Update pre-order status if exists
-      const preOrder = await fastify.db.preOrder.findFirst({
-        where: { paymentIntentId },
+      const payment = await db.payment.findFirst({
+        where: { stripePaymentIntentId: paymentIntentId },
       });
+      
+      const preOrder = payment ? await db.preOrder.findUnique({
+        where: { id: payment.preorderId },
+      }) : null;
 
       if (preOrder) {
-        await fastify.db.preOrder.update({
+        await db.preOrder.update({
           where: { id: preOrder.id },
           data: {
-            status: 'CANCELLED',
+            status: 'CLOSED',
           },
         });
       }
@@ -263,7 +295,11 @@ export async function paymentRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       Logger.error('Failed to cancel payment intent', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? { 
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
         paymentIntentId: request.params.paymentIntentId,
       });
 
@@ -291,22 +327,21 @@ export async function paymentRoutes(fastify: FastifyInstance) {
       );
 
       // Update payment record
-      const payment = await fastify.db.payment.findFirst({
+      const payment = await db.payment.findFirst({
         where: { stripePaymentIntentId: paymentIntentId },
       });
 
       if (payment) {
-        await fastify.db.payment.update({
+        await db.payment.update({
           where: { id: payment.id },
           data: {
-            status: amount && amount < payment.amount ? 'PARTIALLY_REFUNDED' : 'REFUNDED',
-            refundedAmount: refund.amount,
+            status: 'REFUNDED',
           },
         });
 
         // Update pre-order status
-        await fastify.db.preOrder.update({
-          where: { id: payment.preOrderId },
+        await db.preOrder.update({
+          where: { id: payment.preorderId },
           data: {
             status: 'REFUNDED',
           },
@@ -323,7 +358,11 @@ export async function paymentRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       Logger.error('Failed to create refund', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? { 
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
         body: request.body,
       });
 
@@ -340,7 +379,7 @@ export async function paymentRoutes(fastify: FastifyInstance) {
     try {
       const { userId } = request.body;
 
-      const user = await fastify.db.user.findUnique({
+      const user = await db.user.findUnique({
         where: { id: userId },
       });
 
@@ -367,7 +406,11 @@ export async function paymentRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       Logger.error('Failed to setup payment method', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? { 
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
         userId: request.body.userId,
       });
 
@@ -384,12 +427,12 @@ export async function paymentRoutes(fastify: FastifyInstance) {
     try {
       const { userId } = request.query;
 
-      const user = await fastify.db.user.findUnique({
+      const user = await db.user.findUnique({
         where: { id: userId },
         select: { stripeCustomerId: true },
       });
 
-      if (!user?.stripeCustomerId) {
+      if (!user || !user.stripeCustomerId) {
         return {
           success: true,
           data: {
@@ -421,7 +464,11 @@ export async function paymentRoutes(fastify: FastifyInstance) {
       };
     } catch (error) {
       Logger.error('Failed to list payment methods', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? { 
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
         userId: request.query.userId,
       });
 
@@ -437,14 +484,7 @@ export async function paymentRoutes(fastify: FastifyInstance) {
     Headers: {
       'stripe-signature': string;
     };
-  }>(
-    '/webhook',
-    {
-      config: {
-        rawBody: true,
-      },
-    },
-    async (request, reply) => {
+  }>('/webhook', async (request, reply) => {
       try {
         const signature = request.headers['stripe-signature'];
         const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
@@ -470,7 +510,11 @@ export async function paymentRoutes(fastify: FastifyInstance) {
             const failedIntent = event.data.object;
             Logger.warn('Payment failed', {
               paymentIntentId: failedIntent.id,
-              error: failedIntent.last_payment_error,
+              error: failedIntent.last_payment_error ? {
+                name: 'PaymentError',
+                message: failedIntent.last_payment_error.message || 'Payment failed',
+                code: failedIntent.last_payment_error.code
+              } : undefined,
             });
             break;
 
@@ -483,13 +527,16 @@ export async function paymentRoutes(fastify: FastifyInstance) {
         return { received: true };
       } catch (error) {
         Logger.error('Webhook processing failed', {
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? { 
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+          } : { name: 'Unknown', message: String(error) },
         });
 
         return reply.code(400).send({
           error: 'Webhook processing failed',
         });
       }
-    }
-  );
+    });
 }

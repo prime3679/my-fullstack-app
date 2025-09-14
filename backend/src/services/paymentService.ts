@@ -3,7 +3,7 @@ import { db } from '../lib/db';
 import Logger from '../lib/logger';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-08-27.basil',
 });
 
 export interface CreatePaymentIntentInput {
@@ -72,7 +72,11 @@ export class PaymentService {
       return paymentIntent;
     } catch (error) {
       Logger.error('Failed to create payment intent', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
         input,
       });
       throw error;
@@ -89,7 +93,11 @@ export class PaymentService {
     } catch (error) {
       Logger.error('Failed to retrieve payment intent', {
         paymentIntentId,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
       });
       throw error;
     }
@@ -117,7 +125,11 @@ export class PaymentService {
       Logger.error('Failed to update payment intent', {
         paymentIntentId,
         amount,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
       });
       throw error;
     }
@@ -144,7 +156,11 @@ export class PaymentService {
     } catch (error) {
       Logger.error('Failed to cancel payment intent', {
         paymentIntentId,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
       });
       throw error;
     }
@@ -170,12 +186,10 @@ export class PaymentService {
       // Create payment record
       const payment = await db.payment.create({
         data: {
-          preOrderId,
+          preorderId: preOrderId,
           stripePaymentIntentId: paymentIntentId,
           amount: paymentIntent.amount,
-          currency: paymentIntent.currency,
-          status: 'SUCCEEDED',
-          paymentMethod: paymentIntent.payment_method_types[0] || 'card',
+          status: 'CAPTURED',
         },
       });
 
@@ -184,7 +198,6 @@ export class PaymentService {
         where: { id: preOrderId },
         data: {
           status: 'AUTHORIZED',
-          paymentIntentId: paymentIntentId,
         },
         include: {
           items: true,
@@ -202,7 +215,11 @@ export class PaymentService {
       return { payment, preOrder };
     } catch (error) {
       Logger.error('Failed to process payment completion', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
         input,
       });
       throw error;
@@ -236,7 +253,11 @@ export class PaymentService {
       Logger.error('Failed to create refund', {
         paymentIntentId,
         amount,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
       });
       throw error;
     }
@@ -287,7 +308,11 @@ export class PaymentService {
       Logger.error('Failed to create or retrieve customer', {
         userId,
         email,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
       });
       throw error;
     }
@@ -307,7 +332,11 @@ export class PaymentService {
     } catch (error) {
       Logger.error('Failed to list payment methods', {
         customerId,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
       });
       throw error;
     }
@@ -333,7 +362,11 @@ export class PaymentService {
     } catch (error) {
       Logger.error('Failed to setup payment method', {
         customerId,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
       });
       throw error;
     }
@@ -358,7 +391,11 @@ export class PaymentService {
       return stripe.webhooks.constructEvent(payload, signature, endpointSecret);
     } catch (error) {
       Logger.error('Invalid webhook signature', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : { name: 'Unknown', message: String(error) },
       });
       throw new Error('Invalid webhook signature');
     }

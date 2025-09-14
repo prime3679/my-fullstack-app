@@ -142,23 +142,40 @@ describe('Server Integration Tests', () => {
           restaurantId: restaurant.id,
           startAt: reservationDate,
           partySize: 4,
-          status: 'CONFIRMED',
+          status: 'BOOKED',
         },
       });
 
-      expect(reservation.status).toBe('CONFIRMED');
+      expect(reservation.status).toBe('BOOKED');
+
+      // Create a location for the restaurant
+      const location = await db.location.create({
+        data: {
+          restaurantId: restaurant.id,
+          address: '123 Test Street, Test City',
+        },
+      });
+
+      // Create a table for the check-in
+      const table = await db.table.create({
+        data: {
+          locationId: location.id,
+          label: 'Table 12',
+          seats: 4,
+        },
+      });
 
       const checkIn = await db.checkIn.create({
         data: {
           reservationId: reservation.id,
-          userId: user.id,
-          restaurantId: restaurant.id,
-          checkedInAt: new Date(),
-          tableNumber: '12',
+          method: 'QR_SCAN',
+          scannedAt: new Date(),
+          locationId: location.id,
+          tableId: table.id,
         },
       });
 
-      expect(checkIn.tableNumber).toBe('12');
+      expect(checkIn.tableId).toBe(table.id);
 
       const updatedReservation = await db.reservation.update({
         where: { id: reservation.id },
@@ -170,8 +187,6 @@ describe('Server Integration Tests', () => {
       const preOrder = await db.preOrder.create({
         data: {
           reservationId: reservation.id,
-          userId: user.id,
-          restaurantId: restaurant.id,
           status: 'DRAFT',
           subtotal: 12000,
           tax: 1080,
@@ -185,14 +200,16 @@ describe('Server Integration Tests', () => {
       const preOrderItems = await db.preOrderItem.createMany({
         data: [
           {
-            preOrderId: preOrder.id,
+            preorderId: preOrder.id,
+            sku: 'caesar-salad',
             name: 'Caesar Salad',
             price: 1200,
             quantity: 2,
             notes: 'No anchovies',
           },
           {
-            preOrderId: preOrder.id,
+            preorderId: preOrder.id,
+            sku: 'ribeye-steak',
             name: 'Ribeye Steak',
             price: 4800,
             quantity: 2,
@@ -225,7 +242,7 @@ describe('Server Integration Tests', () => {
               restaurantId: restaurant.id,
               startAt: new Date(),
               partySize: 2,
-              status: 'CONFIRMED',
+              status: 'BOOKED',
             },
           });
 
@@ -253,7 +270,7 @@ describe('Server Integration Tests', () => {
             restaurantId: restaurant.id,
             startAt: new Date(Date.now() + i * 60 * 60 * 1000),
             partySize: 2,
-            status: 'CONFIRMED',
+            status: 'BOOKED',
           },
         })
       );
@@ -289,7 +306,7 @@ describe('Server Integration Tests', () => {
             email: 'invalid-email',
             phone: '123',
             name: '',
-            password: 'weak',
+            hashedPassword: 'weak',
           },
         });
       } catch (error: any) {
