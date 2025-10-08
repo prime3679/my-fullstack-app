@@ -39,6 +39,45 @@ export interface MenuItemWithModifiers {
 
 export class MenuService {
   
+  private transformMenuItem(item: any): MenuItemWithModifiers {
+    return {
+      id: item.id,
+      sku: item.sku,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      imageUrl: item.imageUrl,
+      prepTimeMinutes: item.prepTimeMinutes,
+      isAvailable: item.isAvailable,
+      is86: item.is86,
+      allergensJson: item.allergensJson,
+      dietaryTags: item.dietaryTags,
+      nutritionJson: item.nutritionJson,
+      sortOrder: item.sortOrder,
+      category: {
+        id: item.category.id,
+        name: item.category.name
+      },
+      modifierGroups: item.modifierGroups.map((mg: any) => ({
+        id: mg.modifierGroup.id,
+        name: mg.modifierGroup.name,
+        description: mg.modifierGroup.description,
+        minSelections: mg.modifierGroup.minSelections,
+        maxSelections: mg.modifierGroup.maxSelections,
+        isRequired: mg.isRequired,
+        sortOrder: mg.sortOrder,
+        modifiers: mg.modifierGroup.modifiers.map((modifier: any) => ({
+          id: modifier.id,
+          name: modifier.name,
+          description: modifier.description,
+          price: modifier.price,
+          isAvailable: modifier.isAvailable,
+          sortOrder: modifier.sortOrder
+        }))
+      }))
+    };
+  }
+
   async getRestaurantMenu(restaurantId: string): Promise<{
     categories: Array<{
       id: string;
@@ -97,42 +136,7 @@ export class MenuService {
         name: category.name,
         description: category.description,
         sortOrder: category.sortOrder,
-        items: category.menuItems.map(item => ({
-          id: item.id,
-          sku: item.sku,
-          name: item.name,
-          description: item.description,
-          price: item.price,
-          imageUrl: item.imageUrl,
-          prepTimeMinutes: item.prepTimeMinutes,
-          isAvailable: item.isAvailable,
-          is86: item.is86,
-          allergensJson: item.allergensJson,
-          dietaryTags: item.dietaryTags,
-          nutritionJson: item.nutritionJson,
-          sortOrder: item.sortOrder,
-          category: {
-            id: category.id,
-            name: category.name
-          },
-          modifierGroups: item.modifierGroups.map(mg => ({
-            id: mg.modifierGroup.id,
-            name: mg.modifierGroup.name,
-            description: mg.modifierGroup.description,
-            minSelections: mg.modifierGroup.minSelections,
-            maxSelections: mg.modifierGroup.maxSelections,
-            isRequired: mg.isRequired,
-            sortOrder: mg.sortOrder,
-            modifiers: mg.modifierGroup.modifiers.map(modifier => ({
-              id: modifier.id,
-              name: modifier.name,
-              description: modifier.description,
-              price: modifier.price,
-              isAvailable: modifier.isAvailable,
-              sortOrder: modifier.sortOrder
-            }))
-          }))
-        }))
+        items: category.menuItems.map(item => this.transformMenuItem(item))
       }))
     };
   }
@@ -178,39 +182,7 @@ export class MenuService {
       return null;
     }
 
-    return {
-      id: item.id,
-      sku: item.sku,
-      name: item.name,
-      description: item.description,
-      price: item.price,
-      imageUrl: item.imageUrl,
-      prepTimeMinutes: item.prepTimeMinutes,
-      isAvailable: item.isAvailable,
-      is86: item.is86,
-      allergensJson: item.allergensJson,
-      dietaryTags: item.dietaryTags,
-      nutritionJson: item.nutritionJson,
-      sortOrder: item.sortOrder,
-      category: item.category,
-      modifierGroups: item.modifierGroups.map(mg => ({
-        id: mg.modifierGroup.id,
-        name: mg.modifierGroup.name,
-        description: mg.modifierGroup.description,
-        minSelections: mg.modifierGroup.minSelections,
-        maxSelections: mg.modifierGroup.maxSelections,
-        isRequired: mg.isRequired,
-        sortOrder: mg.sortOrder,
-        modifiers: mg.modifierGroup.modifiers.map(modifier => ({
-          id: modifier.id,
-          name: modifier.name,
-          description: modifier.description,
-          price: modifier.price,
-          isAvailable: modifier.isAvailable,
-          sortOrder: modifier.sortOrder
-        }))
-      }))
-    };
+    return this.transformMenuItem(item);
   }
 
   async searchMenuItems(
@@ -279,39 +251,7 @@ export class MenuService {
       }
     });
 
-    return items.map(item => ({
-      id: item.id,
-      sku: item.sku,
-      name: item.name,
-      description: item.description,
-      price: item.price,
-      imageUrl: item.imageUrl,
-      prepTimeMinutes: item.prepTimeMinutes,
-      isAvailable: item.isAvailable,
-      is86: item.is86,
-      allergensJson: item.allergensJson,
-      dietaryTags: item.dietaryTags,
-      nutritionJson: item.nutritionJson,
-      sortOrder: item.sortOrder,
-      category: item.category,
-      modifierGroups: item.modifierGroups.map(mg => ({
-        id: mg.modifierGroup.id,
-        name: mg.modifierGroup.name,
-        description: mg.modifierGroup.description,
-        minSelections: mg.modifierGroup.minSelections,
-        maxSelections: mg.modifierGroup.maxSelections,
-        isRequired: mg.isRequired,
-        sortOrder: mg.sortOrder,
-        modifiers: mg.modifierGroup.modifiers.map(modifier => ({
-          id: modifier.id,
-          name: modifier.name,
-          description: modifier.description,
-          price: modifier.price,
-          isAvailable: modifier.isAvailable,
-          sortOrder: modifier.sortOrder
-        }))
-      }))
-    }));
+    return items.map(item => this.transformMenuItem(item));
   }
 
   // Staff management methods
@@ -358,39 +298,7 @@ export class MenuService {
       }
     });
 
-    return {
-      id: updated.id,
-      sku: updated.sku,
-      name: updated.name,
-      description: updated.description,
-      price: updated.price,
-      imageUrl: updated.imageUrl,
-      prepTimeMinutes: updated.prepTimeMinutes,
-      isAvailable: updated.isAvailable,
-      is86: updated.is86,
-      allergensJson: updated.allergensJson,
-      dietaryTags: updated.dietaryTags,
-      nutritionJson: updated.nutritionJson,
-      sortOrder: updated.sortOrder,
-      category: updated.category,
-      modifierGroups: updated.modifierGroups.map(mg => ({
-        id: mg.modifierGroup.id,
-        name: mg.modifierGroup.name,
-        description: mg.modifierGroup.description,
-        minSelections: mg.modifierGroup.minSelections,
-        maxSelections: mg.modifierGroup.maxSelections,
-        isRequired: mg.isRequired,
-        sortOrder: mg.sortOrder,
-        modifiers: mg.modifierGroup.modifiers.map(modifier => ({
-          id: modifier.id,
-          name: modifier.name,
-          description: modifier.description,
-          price: modifier.price,
-          isAvailable: modifier.isAvailable,
-          sortOrder: modifier.sortOrder
-        }))
-      }))
-    };
+    return this.transformMenuItem(updated);
   }
 
   async getMenuItemsByDietaryRestrictions(
@@ -447,39 +355,7 @@ export class MenuService {
       }
     });
 
-    return {
-      id: updated.id,
-      sku: updated.sku,
-      name: updated.name,
-      description: updated.description,
-      price: updated.price,
-      imageUrl: updated.imageUrl,
-      prepTimeMinutes: updated.prepTimeMinutes,
-      isAvailable: updated.isAvailable,
-      is86: updated.is86,
-      allergensJson: updated.allergensJson,
-      dietaryTags: updated.dietaryTags,
-      nutritionJson: updated.nutritionJson,
-      sortOrder: updated.sortOrder,
-      category: updated.category,
-      modifierGroups: updated.modifierGroups.map(mg => ({
-        id: mg.modifierGroup.id,
-        name: mg.modifierGroup.name,
-        description: mg.modifierGroup.description,
-        minSelections: mg.modifierGroup.minSelections,
-        maxSelections: mg.modifierGroup.maxSelections,
-        isRequired: mg.isRequired,
-        sortOrder: mg.sortOrder,
-        modifiers: mg.modifierGroup.modifiers.map(modifier => ({
-          id: modifier.id,
-          name: modifier.name,
-          description: modifier.description,
-          price: modifier.price,
-          isAvailable: modifier.isAvailable,
-          sortOrder: modifier.sortOrder
-        }))
-      }))
-    };
+    return this.transformMenuItem(updated);
   }
 
   async updateMenuItemAvailability(
@@ -527,39 +403,7 @@ export class MenuService {
       }
     });
 
-    return {
-      id: updated.id,
-      sku: updated.sku,
-      name: updated.name,
-      description: updated.description,
-      price: updated.price,
-      imageUrl: updated.imageUrl,
-      prepTimeMinutes: updated.prepTimeMinutes,
-      isAvailable: updated.isAvailable,
-      is86: updated.is86,
-      allergensJson: updated.allergensJson,
-      dietaryTags: updated.dietaryTags,
-      nutritionJson: updated.nutritionJson,
-      sortOrder: updated.sortOrder,
-      category: updated.category,
-      modifierGroups: updated.modifierGroups.map(mg => ({
-        id: mg.modifierGroup.id,
-        name: mg.modifierGroup.name,
-        description: mg.modifierGroup.description,
-        minSelections: mg.modifierGroup.minSelections,
-        maxSelections: mg.modifierGroup.maxSelections,
-        isRequired: mg.isRequired,
-        sortOrder: mg.sortOrder,
-        modifiers: mg.modifierGroup.modifiers.map(modifier => ({
-          id: modifier.id,
-          name: modifier.name,
-          description: modifier.description,
-          price: modifier.price,
-          isAvailable: modifier.isAvailable,
-          sortOrder: modifier.sortOrder
-        }))
-      }))
-    };
+    return this.transformMenuItem(updated);
   }
 
   async toggle86Status(restaurantId: string, sku: string): Promise<MenuItemWithModifiers | null> {
@@ -605,38 +449,6 @@ export class MenuService {
       }
     });
 
-    return {
-      id: updated.id,
-      sku: updated.sku,
-      name: updated.name,
-      description: updated.description,
-      price: updated.price,
-      imageUrl: updated.imageUrl,
-      prepTimeMinutes: updated.prepTimeMinutes,
-      isAvailable: updated.isAvailable,
-      is86: updated.is86,
-      allergensJson: updated.allergensJson,
-      dietaryTags: updated.dietaryTags,
-      nutritionJson: updated.nutritionJson,
-      sortOrder: updated.sortOrder,
-      category: updated.category,
-      modifierGroups: updated.modifierGroups.map(mg => ({
-        id: mg.modifierGroup.id,
-        name: mg.modifierGroup.name,
-        description: mg.modifierGroup.description,
-        minSelections: mg.modifierGroup.minSelections,
-        maxSelections: mg.modifierGroup.maxSelections,
-        isRequired: mg.isRequired,
-        sortOrder: mg.sortOrder,
-        modifiers: mg.modifierGroup.modifiers.map(modifier => ({
-          id: modifier.id,
-          name: modifier.name,
-          description: modifier.description,
-          price: modifier.price,
-          isAvailable: modifier.isAvailable,
-          sortOrder: modifier.sortOrder
-        }))
-      }))
-    };
+    return this.transformMenuItem(updated);
   }
 }
