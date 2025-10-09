@@ -23,6 +23,25 @@ interface KitchenTicket {
   pacingJson?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
+  reservation?: {
+    id: string;
+    partySize: number;
+    startAt: string;
+    user: {
+      name: string;
+      email: string;
+    };
+    preOrder?: {
+      id: string;
+      items: Array<{
+        name: string;
+        quantity: number;
+        modifiers?: string[];
+        notes?: string;
+        allergens?: string[];
+      }>;
+    };
+  };
 }
 
 interface KitchenStats {
@@ -66,9 +85,23 @@ export function useKitchenWebSocket(options: UseKitchenWebSocketOptions) {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const reconnectAttempts = useRef(0);
   const queryClient = useQueryClient();
+  
+  const onTicketUpdateRef = useRef(onTicketUpdate);
+  const onNewTicketRef = useRef(onNewTicket);
+  const onTicketReadyRef = useRef(onTicketReady);
+  const onStatsUpdateRef = useRef(onStatsUpdate);
+  const onEmergencyAlertRef = useRef(onEmergencyAlert);
+  
+  useEffect(() => {
+    onTicketUpdateRef.current = onTicketUpdate;
+    onNewTicketRef.current = onNewTicket;
+    onTicketReadyRef.current = onTicketReady;
+    onStatsUpdateRef.current = onStatsUpdate;
+    onEmergencyAlertRef.current = onEmergencyAlert;
+  }, [onTicketUpdate, onNewTicket, onTicketReady, onStatsUpdate, onEmergencyAlert]);
 
   const MAX_RECONNECT_ATTEMPTS = 5;
   const RECONNECT_DELAY = 3000;
@@ -79,7 +112,8 @@ export function useKitchenWebSocket(options: UseKitchenWebSocketOptions) {
 
     try {
       // Create different audio contexts for different notifications
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const audioContext = new AudioContextClass();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
 
@@ -170,8 +204,8 @@ export function useKitchenWebSocket(options: UseKitchenWebSocketOptions) {
               break;
 
             case 'ticket_updated':
-              if (message.ticket && onTicketUpdate) {
-                onTicketUpdate(message.ticket);
+              if (message.ticket && onTicketUpdateRef.current) {
+                onTicketUpdateRef.current(message.ticket);
               }
               // Invalidate queries to refresh data
               queryClient.invalidateQueries({ queryKey: ['kitchen-tickets'] });
@@ -179,8 +213,8 @@ export function useKitchenWebSocket(options: UseKitchenWebSocketOptions) {
               break;
 
             case 'new_ticket':
-              if (message.ticket && onNewTicket) {
-                onNewTicket(message.ticket);
+              if (message.ticket && onNewTicketRef.current) {
+                onNewTicketRef.current(message.ticket);
               }
               // Play notification sound for new tickets
               playNotificationSound('default');
@@ -189,8 +223,8 @@ export function useKitchenWebSocket(options: UseKitchenWebSocketOptions) {
               break;
 
             case 'ticket_ready':
-              if (message.ticket && onTicketReady) {
-                onTicketReady(message.ticket);
+              if (message.ticket && onTicketReadyRef.current) {
+                onTicketReadyRef.current(message.ticket);
               }
               // Play special sound for ready tickets
               playNotificationSound(message.sound);
@@ -198,15 +232,15 @@ export function useKitchenWebSocket(options: UseKitchenWebSocketOptions) {
               break;
 
             case 'stats_updated':
-              if (message.stats && onStatsUpdate) {
-                onStatsUpdate(message.stats);
+              if (message.stats && onStatsUpdateRef.current) {
+                onStatsUpdateRef.current(message.stats);
               }
               queryClient.invalidateQueries({ queryKey: ['kitchen-dashboard'] });
               break;
 
             case 'emergency_alert':
-              if (onEmergencyAlert) {
-                onEmergencyAlert(message);
+              if (onEmergencyAlertRef.current) {
+                onEmergencyAlertRef.current(message as unknown as Record<string, unknown>);
               }
               // Play urgent sound for emergencies
               playNotificationSound(message.sound);
@@ -251,7 +285,7 @@ export function useKitchenWebSocket(options: UseKitchenWebSocketOptions) {
       console.error('Failed to create WebSocket connection:', error);
       setConnectionError('Failed to establish WebSocket connection');
     }
-  }, [enabled, restaurantId, onTicketUpdate, onNewTicket, onTicketReady, onStatsUpdate, onEmergencyAlert, queryClient, playNotificationSound]);
+  }, [enabled, restaurantId, queryClient, playNotificationSound]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -266,7 +300,7 @@ export function useKitchenWebSocket(options: UseKitchenWebSocketOptions) {
     setIsConnected(false);
   }, []);
 
-  const sendMessage = useCallback((message: any) => {
+  const sendMessage = useCallback((message: Record<string, unknown>) => {
     if (wsRef.current && isConnected) {
       wsRef.current.send(JSON.stringify(message));
       return true;
