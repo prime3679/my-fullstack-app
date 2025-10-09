@@ -11,7 +11,7 @@ import { kitchenRoutes } from './routes/kitchen';
 import { checkinRoutes } from './routes/checkin';
 import { authRoutes } from './routes/auth';
 import { staffRoutes } from './routes/staff';
-// import { paymentRoutes } from './routes/payments';
+import { paymentRoutes } from './routes/payments';
 import { WebSocketManager, websocketManager } from './lib/websocketManager';
 import { requestLoggingPlugin } from './lib/middleware';
 import { SocialAuthService } from './lib/socialAuth';
@@ -61,7 +61,7 @@ async function start() {
     await fastify.register(preOrderRoutes, { prefix: '/api/v1/preorders' });
     await fastify.register(kitchenRoutes, { prefix: '/api/v1/kitchen' });
     await fastify.register(checkinRoutes, { prefix: '/api/v1/checkin' });
-    // await fastify.register(paymentRoutes, { prefix: '/api/v1/payments' });
+    await fastify.register(paymentRoutes, { prefix: '/api/v1/payments' });
 
     // Initialize WebSocket manager
     const wsManager = new WebSocketManager(fastify);
