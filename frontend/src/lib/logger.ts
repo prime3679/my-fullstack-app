@@ -1,10 +1,13 @@
 'use client';
 
+import { API_BASE } from './api';
+
 interface LogContext {
   userId?: string;
   sessionId?: string;
   page?: string;
   action?: string;
+  type?: string;
   error?: {
     name: string;
     message: string;
@@ -16,6 +19,7 @@ interface LogContext {
   };
   userAgent?: string;
   url?: string;
+  [key: string]: unknown;
 }
 
 export class ClientLogger {
@@ -60,7 +64,7 @@ export class ClientLogger {
 
     // Send to backend logging endpoint (implement as needed)
     try {
-      await fetch('/api/v1/logs', {
+      await fetch(`${API_BASE}/logs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

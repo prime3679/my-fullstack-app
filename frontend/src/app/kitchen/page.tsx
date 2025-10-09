@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useKitchenWebSocket } from '../../hooks/useKitchenWebSocket';
+import { API_BASE } from '../../lib/api';
 
 interface KitchenTicket {
   id: string;
@@ -40,42 +41,20 @@ interface KitchenTicket {
   };
 }
 
-interface DashboardStats {
-  ticketCounts: Record<string, number>;
-  averagePrepTime: number;
-  activeTickets: number;
-}
-
-const RESTAURANT_ID = 'cmfhahzn10000un0ifrqljetp'; // Default restaurant for demo
+const RESTAURANT_ID = 'cmgig470a0000qhaxwwlf9e3l'; // La Carta Demo Restaurant
 
 export default function KitchenDashboard() {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [notifications, setNotifications] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
   // WebSocket connection for real-time updates
-  const { isConnected, connectionError } = useKitchenWebSocket({
+  useKitchenWebSocket({
     restaurantId: RESTAURANT_ID,
-    onNewTicket: (ticket) => {
-      setNotifications(prev => [
-        ...prev.slice(-4), // Keep only last 5 notifications
-        `New order from ${ticket.reservation?.user?.name || 'Guest'} - Table ${ticket.reservation?.partySize || '?'}`
-      ]);
+    onNewTicket: () => {
     },
-    onTicketReady: (ticket) => {
-      setNotifications(prev => [
-        ...prev.slice(-4),
-        `🍽️ Order ready for ${ticket.reservation?.user?.name || 'Guest'}!`
-      ]);
+    onTicketReady: () => {
     },
-    onTicketUpdate: (ticket) => {
-      // Optional: Add notification for status changes
-      if (ticket.status === 'FIRED') {
-        setNotifications(prev => [
-          ...prev.slice(-4),
-          `🔥 Started cooking for ${ticket.reservation?.user?.name || 'Guest'}`
-        ]);
-      }
+    onTicketUpdate: () => {
     }
   });
 
@@ -87,7 +66,7 @@ export default function KitchenDashboard() {
   });
 
   // Fetch dashboard stats
-  const { data: statsData, isLoading: loadingStats } = useQuery({
+  const { data: statsData } = useQuery({
     queryKey: ['kitchen-dashboard', RESTAURANT_ID],
     queryFn: () => fetchDashboardStats(RESTAURANT_ID),
     refetchInterval: 30000, // Refetch every 30 seconds
@@ -337,7 +316,7 @@ async function fetchKitchenTickets(restaurantId: string, status?: string) {
   const params = new URLSearchParams({ restaurantId });
   if (status) params.append('status', status);
   
-  const response = await fetch(`/api/v1/kitchen/tickets?${params}`);
+  const response = await fetch(`${API_BASE}/kitchen/tickets?${params}`);
   if (!response.ok) {
     throw new Error('Failed to fetch kitchen tickets');
   }
@@ -345,7 +324,7 @@ async function fetchKitchenTickets(restaurantId: string, status?: string) {
 }
 
 async function fetchDashboardStats(restaurantId: string) {
-  const response = await fetch(`/api/v1/kitchen/dashboard?restaurantId=${restaurantId}`);
+  const response = await fetch(`${API_BASE}/kitchen/dashboard?restaurantId=${restaurantId}`);
   if (!response.ok) {
     throw new Error('Failed to fetch dashboard stats');
   }
@@ -353,7 +332,7 @@ async function fetchDashboardStats(restaurantId: string) {
 }
 
 async function updateTicketStatus(ticketId: string, status: string, estimatedPrepMinutes?: number) {
-  const response = await fetch(`/api/v1/kitchen/tickets/${ticketId}`, {
+  const response = await fetch(`${API_BASE}/kitchen/tickets/${ticketId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',

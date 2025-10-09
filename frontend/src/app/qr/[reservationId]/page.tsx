@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
+import { API_BASE } from '../../../lib/api';
 
 interface QRData {
   success: boolean;
@@ -150,7 +151,7 @@ export default function QRCodePage() {
 
 // API function
 async function fetchQRData(reservationId: string): Promise<QRData> {
-  const response = await fetch(`/api/v1/checkin/qr/${reservationId}`);
+  const response = await fetch(`${API_BASE}/checkin/qr/${reservationId}`);
   if (!response.ok) {
     throw new Error('Failed to fetch QR data');
   }

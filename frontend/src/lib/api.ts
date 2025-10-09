@@ -11,7 +11,7 @@ import {
   PreOrderCalculation
 } from '../../../shared/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -146,14 +146,14 @@ export const api = {
     preOrderId: string, 
     itemId: string, 
     updates: { quantity?: number; notes?: string }
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<PreOrder>> {
     return apiRequest(`/preorders/${preOrderId}/items/${itemId}`, {
       method: 'PATCH',
       body: JSON.stringify(updates),
     });
   },
 
-  async removePreOrderItem(preOrderId: string, itemId: string): Promise<ApiResponse<any>> {
+  async removePreOrderItem(preOrderId: string, itemId: string): Promise<ApiResponse<PreOrder>> {
     return apiRequest(`/preorders/${preOrderId}/items/${itemId}`, {
       method: 'DELETE',
     });

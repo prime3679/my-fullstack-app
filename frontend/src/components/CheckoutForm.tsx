@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
+import { API_BASE } from '../lib/api';
 
 interface CheckoutFormProps {
   paymentIntentId: string;
@@ -9,7 +10,7 @@ interface CheckoutFormProps {
   amount: number;
 }
 
-export function CheckoutForm({ paymentIntentId, onSuccess, amount }: CheckoutFormProps) {
+export function CheckoutForm({ onSuccess, amount }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +41,7 @@ export function CheckoutForm({ paymentIntentId, onSuccess, amount }: CheckoutFor
 
       if (paymentIntent && paymentIntent.status === 'succeeded') {
         // Confirm payment with our backend
-        const response = await fetch('/api/v1/payments/confirm', {
+        const response = await fetch(`${API_BASE}/payments/confirm`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
