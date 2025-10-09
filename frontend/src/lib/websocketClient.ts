@@ -21,8 +21,10 @@ export interface WebSocketConfig {
 export interface WebSocketMessage {
   id?: string;
   type: string;
-  data?: any;
+  data?: Record<string, unknown>;
   timestamp?: number;
+  messageId?: string;
+  filters?: Record<string, unknown>;
 }
 
 export class KitchenWebSocketClient extends EventEmitter {
@@ -206,7 +208,7 @@ export class KitchenWebSocketClient extends EventEmitter {
     }
   }
 
-  private handleConnectionError(error: any): void {
+  private handleConnectionError(error: unknown): void {
     this.emit('error', error);
     
     if (this.state === ConnectionState.CONNECTING) {
@@ -377,7 +379,7 @@ export class KitchenWebSocketClient extends EventEmitter {
 
   // Utility methods
 
-  subscribe(filters: any): void {
+  subscribe(filters: Record<string, unknown>): void {
     this.send({
       type: 'subscribe',
       filters
@@ -433,7 +435,7 @@ export class KitchenWebSocketClient extends EventEmitter {
     this.emit('playSound', soundName);
   }
 
-  private log(...args: any[]): void {
+  private log(...args: unknown[]): void {
     if (this.config.debug) {
       console.log('[WebSocket]', ...args);
     }
@@ -453,7 +455,7 @@ export function useKitchenWebSocket(
 ) {
   const [state, setState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
   const [isConnected, setIsConnected] = useState(false);
-  const clientRef = useRef<KitchenWebSocketClient>();
+  const clientRef = useRef<KitchenWebSocketClient | undefined>(undefined);
 
   useEffect(() => {
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
@@ -481,7 +483,7 @@ export function useKitchenWebSocket(
     return () => {
       client.disconnect();
     };
-  }, [restaurantId]);
+  }, [restaurantId, options]);
 
   return {
     client: clientRef.current,
@@ -490,6 +492,6 @@ export function useKitchenWebSocket(
     connect: () => clientRef.current?.connect(),
     disconnect: () => clientRef.current?.disconnect(),
     send: (message: WebSocketMessage) => clientRef.current?.send(message) ?? false,
-    subscribe: (filters: any) => clientRef.current?.subscribe(filters)
+    subscribe: (filters: Record<string, unknown>) => clientRef.current?.subscribe(filters)
   };
 }

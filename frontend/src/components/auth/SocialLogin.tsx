@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { ClientLogger } from '../../lib/logger';
 
 interface SocialLoginProps {
@@ -20,21 +20,51 @@ interface SocialLoginProps {
 }
 
 // Declare Google API types
+interface GoogleCredentialResponse {
+  credential: string;
+}
+
+interface GoogleAccountsId {
+  initialize: (config: {
+    client_id: string;
+    callback: (response: GoogleCredentialResponse) => void;
+    auto_select?: boolean;
+    cancel_on_tap_outside?: boolean;
+  }) => void;
+  renderButton: (element: HTMLElement, config: Record<string, unknown>) => void;
+  prompt: () => void;
+}
+
+interface AppleAuthResponse {
+  authorization: {
+    id_token: string;
+  };
+  user?: {
+    email?: string;
+    name?: {
+      firstName: string;
+      lastName: string;
+    };
+  };
+}
+
 declare global {
   interface Window {
     google?: {
       accounts: {
-        id: {
-          initialize: (config: any) => void;
-          renderButton: (element: HTMLElement, config: any) => void;
-          prompt: () => void;
-        };
+        id: GoogleAccountsId;
       };
     };
     AppleID?: {
       auth: {
-        init: (config: any) => void;
-        signIn: (config?: any) => Promise<any>;
+        init: (config: {
+          clientId: string;
+          scope: string;
+          redirectURI: string;
+          state: string;
+          usePopup: boolean;
+        }) => void;
+        signIn: (config?: Record<string, unknown>) => Promise<AppleAuthResponse>;
       };
     };
   }
@@ -44,6 +74,49 @@ export function SocialLogin({ onSuccess, onError, disabled }: SocialLoginProps) 
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
   const [isAppleLoaded, setIsAppleLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleGoogleResponse = useCallback(async (credentialResponse: GoogleCredentialResponse) => {
+    if (disabled) return;
+    
+    setIsLoading(true);
+    ClientLogger.userAction('GOOGLE_SIGNIN_ATTEMPTED');
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/auth/social`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          provider: 'google',
+          idToken: credentialResponse.credential
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        ClientLogger.businessEvent('SOCIAL_LOGIN_SUCCESS', {
+          message: `Social login success - provider: google, userId: ${data.user.id}, requiresOnboarding: ${data.requiresOnboarding}`
+        });
+
+        onSuccess({
+          provider: 'google',
+          token: data.token,
+          user: data.user,
+          requiresOnboarding: data.requiresOnboarding
+        });
+      } else {
+        throw new Error(data.error || 'Google sign-in failed');
+      }
+    } catch (error) {
+      const errorObj = error instanceof Error ? error : new Error('Google sign-in failed');
+      ClientLogger.error('Google sign-in error', { error: errorObj });
+      onError(errorObj.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [disabled, onSuccess, onError]);
 
   useEffect(() => {
     // Load Google Sign-In
@@ -96,51 +169,7 @@ export function SocialLogin({ onSuccess, onError, disabled }: SocialLoginProps) 
       if (googleScript) googleScript.remove();
       if (appleScript) appleScript.remove();
     };
-  }, []);
-
-  const handleGoogleResponse = async (credentialResponse: any) => {
-    if (disabled) return;
-    
-    setIsLoading(true);
-    ClientLogger.userAction('GOOGLE_SIGNIN_ATTEMPTED');
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/auth/social`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          provider: 'google',
-          idToken: credentialResponse.credential
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        ClientLogger.businessEvent('SOCIAL_LOGIN_SUCCESS', {
-          provider: 'google',
-          userId: data.user.id,
-          requiresOnboarding: data.requiresOnboarding
-        });
-
-        onSuccess({
-          provider: 'google',
-          token: data.token,
-          user: data.user,
-          requiresOnboarding: data.requiresOnboarding
-        });
-      } else {
-        throw new Error(data.error || 'Google sign-in failed');
-      }
-    } catch (error) {
-      ClientLogger.error('Google sign-in error', { error });
-      onError(error instanceof Error ? error.message : 'Google sign-in failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [handleGoogleResponse]);
 
   const handleGoogleSignIn = () => {
     if (disabled || !isGoogleLoaded || !window.google) return;
@@ -175,9 +204,7 @@ export function SocialLogin({ onSuccess, onError, disabled }: SocialLoginProps) 
 
       if (response.ok && data.success) {
         ClientLogger.businessEvent('SOCIAL_LOGIN_SUCCESS', {
-          provider: 'apple',
-          userId: data.user.id,
-          requiresOnboarding: data.requiresOnboarding
+          message: `Social login success - provider: apple, userId: ${data.user.id}, requiresOnboarding: ${data.requiresOnboarding}`
         });
 
         onSuccess({
@@ -190,8 +217,9 @@ export function SocialLogin({ onSuccess, onError, disabled }: SocialLoginProps) 
         throw new Error(data.error || 'Apple sign-in failed');
       }
     } catch (error) {
-      ClientLogger.error('Apple sign-in error', { error });
-      onError(error instanceof Error ? error.message : 'Apple sign-in failed');
+      const errorObj = error instanceof Error ? error : new Error('Apple sign-in failed');
+      ClientLogger.error('Apple sign-in error', { error: errorObj });
+      onError(errorObj.message);
     } finally {
       setIsLoading(false);
     }

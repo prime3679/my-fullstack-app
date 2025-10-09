@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { OnboardingFlow } from '../../components/auth/OnboardingFlow';
-import { useAuth } from '../../contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClientLogger } from '../../lib/logger';
 
 export default function JoinPage() {
-  const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   

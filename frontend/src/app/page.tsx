@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { LandingHero } from '../components/LandingHero';
 import { useAuth } from '../contexts/AuthContext';
+import type { Restaurant } from '../../../shared/types';
 
 interface RestaurantCardProps {
-  restaurant: any;
+  restaurant: Restaurant;
   partySize: number;
   selectedDate: string;
   selectedTime: string;
@@ -28,7 +29,7 @@ function RestaurantCard({ restaurant, partySize, selectedDate, selectedTime }: R
     
     try {
       const response = await api.checkAvailability(restaurant.id, partySize, selectedDate);
-      const availableSlots = response.data.availableSlots || [];
+      const availableSlots = response.data?.availableSlots || [];
       const hasAvailability = availableSlots.some(slot => slot.available);
       
       setAvailability({
@@ -36,7 +37,7 @@ function RestaurantCard({ restaurant, partySize, selectedDate, selectedTime }: R
         hasAvailability,
         message: hasAvailability ? `${availableSlots.filter(s => s.available).length} time slots available` : 'No availability found'
       });
-    } catch (error) {
+    } catch {
       setAvailability({
         availableSlots: [],
         hasAvailability: false,
@@ -71,7 +72,7 @@ function RestaurantCard({ restaurant, partySize, selectedDate, selectedTime }: R
 
         <div className="mb-4">
           <span className="text-sm text-gray-500">
-            {restaurant.locations[0]?._count?.tables} tables available
+            {restaurant.locations[0]?.tables?.length || 0} tables available
           </span>
         </div>
 
@@ -137,7 +138,7 @@ function RestaurantCard({ restaurant, partySize, selectedDate, selectedTime }: R
 export default function HomePage() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState('');
+  const [selectedLocation] = useState('');
   const [partySize, setPartySize] = useState(2);
   const [selectedDate, setSelectedDate] = useState(() => {
     const tomorrow = new Date();
@@ -145,6 +146,14 @@ export default function HomePage() {
     return tomorrow.toISOString().split('T')[0];
   });
   const [selectedTime, setSelectedTime] = useState('19:00');
+
+  const { data: restaurantsData, isLoading, error } = useQuery({
+    queryKey: ['restaurants', searchQuery, selectedLocation],
+    queryFn: () => searchQuery.trim() 
+      ? api.searchRestaurants(searchQuery, selectedLocation || undefined)
+      : api.getRestaurants(),
+    enabled: !!user,
+  });
 
   // If user is not authenticated, show the landing hero first
   if (!user) {
@@ -155,13 +164,6 @@ export default function HomePage() {
       </div>
     );
   }
-
-  const { data: restaurantsData, isLoading, error } = useQuery({
-    queryKey: ['restaurants', searchQuery, selectedLocation],
-    queryFn: () => searchQuery.trim() 
-      ? api.searchRestaurants(searchQuery, selectedLocation || undefined)
-      : api.getRestaurants(),
-  });
 
   if (isLoading) {
     return (
@@ -361,7 +363,7 @@ export default function HomePage() {
               Invisible Effort
             </h3>
             <p className="text-gray-600">
-              After first setup, it's taps and biometrics only
+              After first setup, it&apos;s taps and biometrics only
             </p>
           </div>
           

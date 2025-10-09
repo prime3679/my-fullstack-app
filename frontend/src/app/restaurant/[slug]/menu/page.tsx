@@ -1,18 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { 
   Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+  SelectItem
 } from '@/components/ui/select';
 import { 
   Tabs, 
@@ -20,11 +18,11 @@ import {
   TabsList, 
   TabsTrigger 
 } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Minus, Plus, ShoppingCart, Search, Clock, AlertTriangle } from 'lucide-react';
+import { Minus, Plus, Search, Clock, AlertTriangle } from 'lucide-react';
 import PreOrderCart from '@/components/PreOrderCart';
-import type { MenuResponse, MenuItem, ModifierGroup, Modifier } from '../../../../../shared/types';
+import type { MenuResponse, MenuItem, Restaurant } from '../../../../../../shared/types';
 
 interface CartItem {
   sku: string;
@@ -48,7 +46,7 @@ export default function MenuPage() {
   const reservationId = searchParams.get('reservationId');
 
   const [menu, setMenu] = useState<MenuResponse | null>(null);
-  const [restaurant, setRestaurant] = useState<any>(null);
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,27 +56,30 @@ export default function MenuPage() {
   const [itemNotes, setItemNotes] = useState('');
   const [itemQuantity, setItemQuantity] = useState(1);
 
-  useEffect(() => {
-    loadRestaurantAndMenu();
-  }, [slug]);
-
-  const loadRestaurantAndMenu = async () => {
+  const loadRestaurantAndMenu = useCallback(async () => {
     try {
       const [restaurantRes, menuRes] = await Promise.all([
         api.getRestaurant(slug),
-        api.getRestaurant(slug).then(res => 
-          api.getRestaurantMenu(res.data.id)
-        )
+        api.getRestaurant(slug).then(res => {
+          if (!res.data) {
+            throw new Error('Restaurant not found');
+          }
+          return api.getRestaurantMenu(res.data.id);
+        })
       ]);
 
-      setRestaurant(restaurantRes.data);
-      setMenu(menuRes.data);
+      setRestaurant(restaurantRes.data || null);
+      setMenu(menuRes.data || null);
     } catch (error) {
       console.error('Failed to load restaurant and menu:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [slug]);
+
+  useEffect(() => {
+    loadRestaurantAndMenu();
+  }, [loadRestaurantAndMenu]);
 
   const addToCart = (item: MenuItem) => {
     const modifiers = Object.entries(itemModifiers).map(([groupId, modifierId]) => {
@@ -225,18 +226,17 @@ export default function MenuPage() {
               />
             </div>
           </div>
-          <Select value={selectedDietary} onValueChange={setSelectedDietary}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Dietary preferences" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All items</SelectItem>
-              <SelectItem value="vegetarian">Vegetarian</SelectItem>
-              <SelectItem value="vegan">Vegan</SelectItem>
-              <SelectItem value="gluten-free">Gluten-free</SelectItem>
-              <SelectItem value="dairy-free">Dairy-free</SelectItem>
-              <SelectItem value="keto">Keto</SelectItem>
-            </SelectContent>
+          <Select 
+            value={selectedDietary} 
+            onChange={(e) => setSelectedDietary(e.target.value)}
+            className="w-48"
+          >
+            <SelectItem value="">All items</SelectItem>
+            <SelectItem value="vegetarian">Vegetarian</SelectItem>
+            <SelectItem value="vegan">Vegan</SelectItem>
+            <SelectItem value="gluten-free">Gluten-free</SelectItem>
+            <SelectItem value="dairy-free">Dairy-free</SelectItem>
+            <SelectItem value="keto">Keto</SelectItem>
           </Select>
         </div>
       </div>
@@ -462,9 +462,11 @@ function MenuItemCard({ item, onAddToCart }: { item: MenuItem; onAddToCart: () =
               )}
             </div>
             {item.imageUrl && (
-              <img 
+              <Image 
                 src={item.imageUrl} 
                 alt={item.name}
+                width={64}
+                height={64}
                 className="w-16 h-16 object-cover rounded-md ml-4"
               />
             )}

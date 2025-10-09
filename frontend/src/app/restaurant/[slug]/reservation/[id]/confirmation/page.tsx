@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../../../lib/api';
@@ -28,14 +27,14 @@ export default function ReservationConfirmationPage() {
     );
   }
 
-  if (error || !reservationData?.data) {
+  if (error || !reservationData?.data || !reservationData.data.restaurant || !reservationData.data.user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-600 text-xl mb-4">❌</div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Reservation not found</h2>
           <p className="text-gray-600 mb-4">
-            The reservation you're looking for could not be found.
+            The reservation you&apos;re looking for could not be found.
           </p>
           <Link href="/" className="text-amber-600 hover:text-amber-700">← Back to restaurants</Link>
         </div>
@@ -44,6 +43,8 @@ export default function ReservationConfirmationPage() {
   }
 
   const reservation = reservationData.data;
+  const restaurant = reservation.restaurant!; // Safe because we checked above
+  const user = reservation.user!; // Safe because we checked above
   const reservationDate = new Date(reservation.startAt);
   const confirmationCode = reservation.confirmationCode || reservation.id.slice(-8).toUpperCase();
 
@@ -55,7 +56,7 @@ export default function ReservationConfirmationPage() {
           <div className="text-6xl mb-4">✅</div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Reservation Confirmed!</h1>
           <p className="text-lg text-gray-600">
-            Your table has been reserved at {reservation.restaurant.name}
+            Your table has been reserved at {restaurant.name}
           </p>
         </div>
 
@@ -73,15 +74,15 @@ export default function ReservationConfirmationPage() {
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
                   <p className="text-sm text-gray-600">Name</p>
-                  <p className="font-medium">{reservation.user.name}</p>
+                  <p className="font-medium">{user.name}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Email</p>
-                  <p className="font-medium">{reservation.user.email}</p>
+                  <p className="font-medium">{user.email}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Phone</p>
-                  <p className="font-medium">{reservation.user.phone}</p>
+                  <p className="font-medium">{user.phone}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Party Size</p>
@@ -124,10 +125,10 @@ export default function ReservationConfirmationPage() {
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Restaurant</h3>
               <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-lg mb-2">{reservation.restaurant.name}</h4>
+                <h4 className="font-medium text-lg mb-2">{restaurant.name}</h4>
                 {/* Note: Restaurant address would come from restaurant data if needed */}
                 <p className="text-gray-600 text-sm">
-                  Timezone: {reservation.restaurant.timezone}
+                  Timezone: {restaurant.timezone}
                 </p>
               </div>
             </div>
@@ -158,7 +159,7 @@ export default function ReservationConfirmationPage() {
 
             {/* Next Steps */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">What's Next?</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">What&apos;s Next?</h3>
               <div className="space-y-3">
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0 w-6 h-6 bg-amber-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>

@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../../../lib/api';
@@ -28,14 +27,14 @@ export default function PreOrderConfirmationPage() {
     );
   }
 
-  if (error || !preOrderData?.data) {
+  if (error || !preOrderData?.data || !preOrderData.data.reservation || !preOrderData.data.reservation.restaurant) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-600 text-xl mb-4">❌</div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Order not found</h2>
           <p className="text-gray-600 mb-4">
-            The pre-order you're looking for could not be found.
+            The pre-order you&apos;re looking for could not be found.
           </p>
           <Link href="/" className="text-amber-600 hover:text-amber-700">← Back to restaurants</Link>
         </div>
@@ -44,7 +43,8 @@ export default function PreOrderConfirmationPage() {
   }
 
   const preOrder = preOrderData.data;
-  const reservation = preOrder.reservation;
+  const reservation = preOrder.reservation!; // Safe because we checked above
+  const restaurant = reservation.restaurant!; // Safe because we checked above
   const reservationDate = new Date(reservation.startAt);
 
   return (
@@ -55,7 +55,7 @@ export default function PreOrderConfirmationPage() {
           <div className="text-6xl mb-4">🍽️</div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Pre-Order Confirmed!</h1>
           <p className="text-lg text-gray-600">
-            Your food will be ready when you arrive at {reservation.restaurant.name}
+            Your food will be ready when you arrive at {restaurant.name}
           </p>
         </div>
 
@@ -81,7 +81,7 @@ export default function PreOrderConfirmationPage() {
                       )}
                       {item.modifiersJson && item.modifiersJson.length > 0 && (
                         <div className="text-sm text-gray-600 mt-1">
-                          {item.modifiersJson.map((mod: any, modIndex: number) => (
+                          {item.modifiersJson.map((mod: { name: string; price: number }, modIndex: number) => (
                             <span key={modIndex} className="inline-block bg-gray-100 rounded-full px-2 py-1 mr-1 mb-1">
                               {mod.name}
                             </span>
@@ -130,7 +130,7 @@ export default function PreOrderConfirmationPage() {
                 <div className="grid gap-3 md:grid-cols-2">
                   <div>
                     <p className="text-sm text-gray-600">Restaurant</p>
-                    <p className="font-medium">{reservation.restaurant.name}</p>
+                    <p className="font-medium">{restaurant.name}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Party Size</p>
@@ -183,7 +183,7 @@ export default function PreOrderConfirmationPage() {
 
             {/* Next Steps */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">What's Next?</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">What&apos;s Next?</h3>
               <div className="space-y-3">
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0 w-6 h-6 bg-amber-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
@@ -203,7 +203,7 @@ export default function PreOrderConfirmationPage() {
                   <div className="flex-shrink-0 w-6 h-6 bg-amber-600 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
                   <div>
                     <p className="font-medium">Enjoy your meal!</p>
-                    <p className="text-sm text-gray-600">Your food will be prepared and served shortly after you're seated.</p>
+                    <p className="text-sm text-gray-600">Your food will be prepared and served shortly after you&apos;re seated.</p>
                   </div>
                 </div>
               </div>
