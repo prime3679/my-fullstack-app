@@ -45,6 +45,7 @@ interface LoadingButtonProps {
   className?: string;
   disabled?: boolean;
   onClick?: () => void;
+  type?: 'button' | 'submit' | 'reset';
 }
 
 export function LoadingButton({ 
@@ -52,10 +53,12 @@ export function LoadingButton({
   children, 
   className = '', 
   disabled = false,
-  onClick
+  onClick,
+  type = 'button'
 }: LoadingButtonProps) {
   return (
     <button
+      type={type}
       className={`inline-flex items-center justify-center space-x-2 ${className}`}
       disabled={disabled || isLoading}
       onClick={onClick}

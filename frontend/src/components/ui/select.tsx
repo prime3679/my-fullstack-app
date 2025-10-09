@@ -23,6 +23,6 @@ const SelectItem = ({ value, children }: { value: string; children: React.ReactN
   <option value={value}>{children}</option>
 );
 const SelectTrigger = Select;
-const SelectValue = ({ placeholder }: { placeholder?: string }) => null;
+const SelectValue = () => null;
 
 export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue };

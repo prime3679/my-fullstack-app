@@ -34,7 +34,10 @@ export function DialogTrigger({ children, asChild }: {
   const handleClick = () => context.setOpen(true);
 
   if (asChild) {
-    return React.cloneElement(children as React.ReactElement, { onClick: handleClick });
+    return React.cloneElement(
+      children as React.ReactElement, 
+      { onClick: handleClick } as React.HTMLAttributes<HTMLElement>
+    );
   }
 
   return (
