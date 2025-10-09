@@ -166,6 +166,14 @@ export class PaymentService {
       throw new Error('Pre-order not found');
     }
 
+    const existingTicket = await db.kitchenTicket.findUnique({
+      where: { reservationId: preOrder.reservationId }
+    });
+
+    if (existingTicket) {
+      return;
+    }
+
     // Calculate estimated prep time (sum of all item prep times)
     const totalPrepTime = preOrder.items.reduce((total, item) => {
       // This would normally come from the menu item data
