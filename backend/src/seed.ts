@@ -1,4 +1,5 @@
 import { PrismaClient, UserRole } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -81,6 +82,8 @@ async function main() {
 
   console.log('✅ Tables created:', tables.map(t => t.label).join(', '));
 
+  const demoPassword = await bcrypt.hash('password123', 10);
+
   // Create demo users for La Carta system
   const users = await Promise.all([
     prisma.user.upsert({
@@ -123,14 +126,70 @@ async function main() {
     }),
     prisma.user.upsert({
       where: { email: 'chef@lacarta.com' },
-      update: {},
+      update: {
+        hashedPassword: demoPassword,
+        role: UserRole.KITCHEN,
+        restaurantId: restaurant.id
+      },
       create: {
         email: 'chef@lacarta.com',
         name: 'Maria Santos',
         phone: '+1-555-0200',
         locale: 'en',
         role: UserRole.KITCHEN,
+        restaurantId: restaurant.id,
+        hashedPassword: demoPassword
+      }
+    }),
+    prisma.user.upsert({
+      where: { email: 'host@lacarta.com' },
+      update: {
+        hashedPassword: demoPassword,
+        role: UserRole.HOST,
         restaurantId: restaurant.id
+      },
+      create: {
+        email: 'host@lacarta.com',
+        name: 'David Chen',
+        phone: '+1-555-0201',
+        locale: 'en',
+        role: UserRole.HOST,
+        restaurantId: restaurant.id,
+        hashedPassword: demoPassword
+      }
+    }),
+    prisma.user.upsert({
+      where: { email: 'server@lacarta.com' },
+      update: {
+        hashedPassword: demoPassword,
+        role: UserRole.SERVER,
+        restaurantId: restaurant.id
+      },
+      create: {
+        email: 'server@lacarta.com',
+        name: 'Emily Rodriguez',
+        phone: '+1-555-0202',
+        locale: 'en',
+        role: UserRole.SERVER,
+        restaurantId: restaurant.id,
+        hashedPassword: demoPassword
+      }
+    }),
+    prisma.user.upsert({
+      where: { email: 'manager@lacarta.com' },
+      update: {
+        hashedPassword: demoPassword,
+        role: UserRole.MANAGER,
+        restaurantId: restaurant.id
+      },
+      create: {
+        email: 'manager@lacarta.com',
+        name: 'James Wilson',
+        phone: '+1-555-0203',
+        locale: 'en',
+        role: UserRole.MANAGER,
+        restaurantId: restaurant.id,
+        hashedPassword: demoPassword
       }
     })
   ]);

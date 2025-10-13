@@ -46,7 +46,7 @@ interface DashboardStats {
   activeTickets: number;
 }
 
-const RESTAURANT_ID = 'cmfhahzn10000un0ifrqljetp'; // Default restaurant for demo
+const RESTAURANT_ID = process.env.NEXT_PUBLIC_RESTAURANT_ID || 'cmgp4xah20000qha270st5g4x'; // Restaurant from seed data
 
 export default function KitchenDashboard() {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
@@ -332,12 +332,13 @@ export default function KitchenDashboard() {
   );
 }
 
-// API functions
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 async function fetchKitchenTickets(restaurantId: string, status?: string) {
   const params = new URLSearchParams({ restaurantId });
   if (status) params.append('status', status);
   
-  const response = await fetch(`/api/v1/kitchen/tickets?${params}`);
+  const response = await fetch(`${API_BASE}/api/v1/kitchen/tickets?${params}`);
   if (!response.ok) {
     throw new Error('Failed to fetch kitchen tickets');
   }
@@ -345,7 +346,7 @@ async function fetchKitchenTickets(restaurantId: string, status?: string) {
 }
 
 async function fetchDashboardStats(restaurantId: string) {
-  const response = await fetch(`/api/v1/kitchen/dashboard?restaurantId=${restaurantId}`);
+  const response = await fetch(`${API_BASE}/api/v1/kitchen/dashboard?restaurantId=${restaurantId}`);
   if (!response.ok) {
     throw new Error('Failed to fetch dashboard stats');
   }
@@ -353,7 +354,7 @@ async function fetchDashboardStats(restaurantId: string) {
 }
 
 async function updateTicketStatus(ticketId: string, status: string, estimatedPrepMinutes?: number) {
-  const response = await fetch(`/api/v1/kitchen/tickets/${ticketId}`, {
+  const response = await fetch(`${API_BASE}/api/v1/kitchen/tickets/${ticketId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
