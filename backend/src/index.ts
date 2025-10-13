@@ -43,9 +43,10 @@ async function start() {
     // Initialize social authentication
     SocialAuthService.initialize();
     
-    // Test email service connection
-    const emailConnected = await emailService.testConnection();
-    Logger.info('Email service initialization', { connected: emailConnected });
+    // Test email service connection (temporarily disabled for testing)
+    // const emailConnected = await emailService.testConnection();
+    // Logger.info('Email service initialization', { connected: emailConnected });
+    Logger.info('Email service initialization', { connected: 'skipped' });
 
     // Register routes
     await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
