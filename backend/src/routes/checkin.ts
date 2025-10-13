@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../lib/db';
+import type { PreOrderItem } from '@prisma/client';
 
 export async function checkinRoutes(fastify: FastifyInstance) {
   
@@ -81,7 +82,7 @@ export async function checkinRoutes(fastify: FastifyInstance) {
         
         if (!kitchenTicket) {
           // Calculate prep time based on pre-order items
-          const estimatedPrepTime = reservation.preOrder.items.reduce((total: number, item: any) => {
+          const estimatedPrepTime = reservation.preOrder.items.reduce((total: number, item: PreOrderItem) => {
             const itemPrepTime = 8; // Default prep time per item
             return total + (itemPrepTime * item.quantity);
           }, 0);
@@ -93,7 +94,7 @@ export async function checkinRoutes(fastify: FastifyInstance) {
               status: 'PENDING',
               estimatedPrepMinutes: Math.max(estimatedPrepTime, 5), // Minimum 5 minutes
               fireAt: new Date(), // Fire immediately on check-in
-              itemsJson: reservation.preOrder.items.map((item: any) => ({
+              itemsJson: reservation.preOrder.items.map((item: PreOrderItem) => ({
                 name: item.name,
                 quantity: item.quantity,
                 modifiers: item.modifiersJson,
@@ -104,7 +105,7 @@ export async function checkinRoutes(fastify: FastifyInstance) {
           });
 
           // Notify kitchen via WebSocket
-          const wsManager = (global as any).websocketManager;
+          const wsManager = globalThis.websocketManager;
           if (wsManager) {
             wsManager.notifyNewTicket(reservation.restaurantId, {
               ...newKitchenTicket,
