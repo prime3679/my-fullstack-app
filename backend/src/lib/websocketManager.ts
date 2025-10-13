@@ -1,24 +1,127 @@
 import { FastifyInstance } from 'fastify';
 import { WebSocket } from 'ws';
+import { z } from 'zod';
+import Logger from './logger';
 
 interface SocketStream {
   on(event: 'message', handler: (message: Buffer) => void): void;
   on(event: 'close', handler: () => void): void;
+  on(event: 'error', handler: (error: unknown) => void): void;
   send(message: string): void;
   readyState: number;
 }
+
+function formatErrorPayload(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: (error as any).code
+    };
+  }
+
+  return {
+    name: 'UnknownError',
+    message: String(error)
+  };
+}
+
+const subscriptionFilterSchema = z.object({
+  statuses: z.array(z.string()).optional(),
+  stations: z.array(z.string()).optional(),
+  ticketIds: z.array(z.string()).optional()
+});
+
+type SubscriptionFilters = z.infer<typeof subscriptionFilterSchema>;
+
+const clientMessageSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('ping') }),
+  z.object({ type: z.literal('subscribe'), filters: subscriptionFilterSchema.default({}) }),
+  z.object({ type: z.literal('unsubscribe') }),
+  z.object({ type: z.literal('ack'), messageId: z.string() })
+]);
+
+type ClientMessage = z.infer<typeof clientMessageSchema>;
+
+type ConnectionAckMessage = {
+  type: 'connected';
+  clientId: string;
+  restaurantId: string;
+  timestamp: string;
+};
+
+type SubscriptionAckMessage = {
+  type: 'subscribed';
+  filters: SubscriptionFilters;
+  timestamp: string;
+};
+
+type PongMessage = {
+  type: 'pong';
+  timestamp: string;
+};
+
+type ErrorMessage = {
+  type: 'error';
+  message: string;
+  details?: unknown;
+  timestamp: string;
+};
+
+type TicketNotification = {
+  type: 'ticket_updated' | 'new_ticket' | 'ticket_ready';
+  ticket: Record<string, unknown>;
+  timestamp: string;
+  sound?: string;
+  priority?: 'high';
+};
+
+type StatsNotification = {
+  type: 'stats_updated';
+  stats: Record<string, unknown>;
+  timestamp: string;
+};
+
+type TimerNotification = {
+  type: 'timer_update';
+  ticketId: string;
+  timeData: Record<string, unknown>;
+  timestamp: string;
+};
+
+type EmergencyNotification = {
+  type: 'emergency_alert';
+  alert: Record<string, unknown>;
+  timestamp: string;
+  priority: 'high';
+  sound: 'emergency_alert';
+};
+
+type KitchenBroadcastMessage =
+  | TicketNotification
+  | StatsNotification
+  | TimerNotification
+  | EmergencyNotification;
+
+type ServerMessage =
+  | ConnectionAckMessage
+  | SubscriptionAckMessage
+  | PongMessage
+  | ErrorMessage
+  | KitchenBroadcastMessage;
 
 interface KitchenClient {
   websocket: SocketStream;
   restaurantId: string;
   clientId: string;
   connectedAt: Date;
+  lastSeenAt: Date;
+  filters?: SubscriptionFilters;
 }
 
-interface ClientMessage {
-  type: string;
-  filters?: any;
-  [key: string]: any;
+interface KitchenRouteParams {
+  restaurantId: string;
 }
 
 export class WebSocketManager {
@@ -27,44 +130,46 @@ export class WebSocketManager {
   constructor(private fastify: FastifyInstance) {}
 
   // Register WebSocket routes and handlers
-  async initialize() {
-    // Kitchen dashboard WebSocket endpoint
-    const self = this;
-    await this.fastify.register(async function (fastify) {
-      fastify.get('/ws/kitchen/:restaurantId', { websocket: true }, (connection, req) => {
-        const restaurantId = (req.params as any).restaurantId as string;
-        const clientId = `kitchen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        console.log(`Kitchen client connected: ${clientId} for restaurant ${restaurantId}`);
+  async initialize(): Promise<void> {
+    await this.fastify.register(async fastifyInstance => {
+      fastifyInstance.get<{ Params: KitchenRouteParams }>('/ws/kitchen/:restaurantId', { websocket: true }, (connection, req) => {
+        const { restaurantId } = req.params;
+        const clientId = `kitchen_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
-        // Store client connection
+        Logger.info('Kitchen client connected', { clientId, restaurantId });
+
         const client: KitchenClient = {
-          websocket: connection as SocketStream,
+          websocket: connection,
           restaurantId,
           clientId,
-          connectedAt: new Date()
+          connectedAt: new Date(),
+          lastSeenAt: new Date()
         };
-        
-        self.clients.set(clientId, client);
 
-        // Handle client messages
+        this.clients.set(clientId, client);
+
         connection.on('message', (message: Buffer) => {
-          try {
-            const data: ClientMessage = JSON.parse(message.toString());
-            self.handleClientMessage(clientId, data);
-          } catch (error) {
-            console.error('Invalid WebSocket message:', error);
+          client.lastSeenAt = new Date();
+          const parsed = this.parseClientMessage(clientId, message);
+          if (parsed) {
+            this.handleClientMessage(clientId, parsed);
           }
         });
 
-        // Handle disconnection
         connection.on('close', () => {
-          console.log(`Kitchen client disconnected: ${clientId}`);
-          self.clients.delete(clientId);
+          Logger.info('Kitchen client disconnected', { clientId, restaurantId });
+          this.clients.delete(clientId);
         });
 
-        // Send initial connection confirmation
-        self.sendToClient(clientId, {
+        connection.on('error', error => {
+          Logger.error('WebSocket error on kitchen connection', {
+            clientId,
+            restaurantId,
+            error: formatErrorPayload(error)
+          });
+        });
+
+        this.sendToClient(clientId, {
           type: 'connected',
           clientId,
           restaurantId,
@@ -77,9 +182,12 @@ export class WebSocketManager {
   // Handle incoming messages from clients
   private handleClientMessage(clientId: string, data: ClientMessage): void {
     const client = this.clients.get(clientId);
-    if (!client) return;
+    if (!client) {
+      Logger.warn('Received message for unknown WebSocket client', { clientId });
+      return;
+    }
 
-    console.log(`Message from ${clientId}:`, data);
+    Logger.debug('Received WebSocket message', { clientId, messageType: data.type });
 
     switch (data.type) {
       case 'ping':
@@ -88,12 +196,33 @@ export class WebSocketManager {
           timestamp: new Date().toISOString()
         });
         break;
-      
+
       case 'subscribe':
-        // Client subscribing to specific ticket updates
+        client.filters = data.filters;
         this.sendToClient(clientId, {
           type: 'subscribed',
           filters: data.filters,
+          timestamp: new Date().toISOString()
+        });
+        break;
+
+      case 'unsubscribe':
+        client.filters = undefined;
+        this.sendToClient(clientId, {
+          type: 'subscribed',
+          filters: {},
+          timestamp: new Date().toISOString()
+        });
+        break;
+
+      case 'ack':
+        Logger.debug('Client acknowledged message', { clientId, messageId: data.messageId });
+        break;
+
+      default:
+        this.sendToClient(clientId, {
+          type: 'error',
+          message: `Unhandled message type: ${(data as { type: string }).type}`,
           timestamp: new Date().toISOString()
         });
         break;
@@ -101,9 +230,20 @@ export class WebSocketManager {
   }
 
   // Send message to a specific client
-  private sendToClient(clientId: string, data: any): boolean {
+  private sendToClient<T extends ServerMessage>(clientId: string, data: T): boolean {
     const client = this.clients.get(clientId);
-    if (!client || client.websocket.readyState !== WebSocket.OPEN) {
+    if (!client) {
+      Logger.warn('Attempted to send WebSocket message to unknown client', { clientId, messageType: data.type });
+      return false;
+    }
+
+    if (client.websocket.readyState !== WebSocket.OPEN) {
+      Logger.warn('WebSocket client not open. Removing client.', {
+        clientId,
+        restaurantId: client.restaurantId,
+        readyState: client.websocket.readyState
+      });
+      this.clients.delete(clientId);
       return false;
     }
 
@@ -111,22 +251,42 @@ export class WebSocketManager {
       client.websocket.send(JSON.stringify(data));
       return true;
     } catch (error) {
-      console.error(`Failed to send to client ${clientId}:`, error);
+      Logger.error('Failed to send WebSocket message', {
+        clientId,
+        restaurantId: client.restaurantId,
+        messageType: data.type,
+        error: formatErrorPayload(error)
+      });
       this.clients.delete(clientId);
       return false;
     }
   }
 
   // Broadcast to all clients for a specific restaurant
-  broadcastToRestaurant(restaurantId: string, data: any): number {
-    const restaurantClients = Array.from(this.clients.values())
-      .filter(client => client.restaurantId === restaurantId);
+  broadcastToRestaurant(restaurantId: string, data: KitchenBroadcastMessage): number {
+    const restaurantClients = Array.from(this.clients.values()).filter(
+      client => client.restaurantId === restaurantId
+    );
 
-    const successCount = restaurantClients.reduce((count, client) => {
-      return this.sendToClient(client.clientId, data) ? count + 1 : count;
-    }, 0);
+    let successCount = 0;
 
-    console.log(`Broadcasted to ${successCount}/${restaurantClients.length} clients for restaurant ${restaurantId}`);
+    for (const client of restaurantClients) {
+      if (!this.shouldDeliverMessage(client, data)) {
+        continue;
+      }
+
+      if (this.sendToClient(client.clientId, data)) {
+        successCount += 1;
+      }
+    }
+
+    Logger.debug('Broadcasted WebSocket message', {
+      restaurantId,
+      messageType: data.type,
+      delivered: successCount,
+      connectedClients: restaurantClients.length
+    });
+
     return successCount;
   }
 
@@ -191,12 +351,87 @@ export class WebSocketManager {
   // Get connected clients info
   getConnectedClients(restaurantId?: string): KitchenClient[] {
     const allClients = Array.from(this.clients.values());
-    
+
     if (restaurantId) {
       return allClients.filter(client => client.restaurantId === restaurantId);
     }
-    
+
     return allClients;
+  }
+
+  private parseClientMessage(clientId: string, raw: Buffer): ClientMessage | null {
+    try {
+      const parsed = JSON.parse(raw.toString());
+      const result = clientMessageSchema.safeParse(parsed);
+
+      if (!result.success) {
+        Logger.warn('Invalid WebSocket message payload', {
+          clientId,
+          issues: result.error.issues
+        });
+
+        this.sendToClient(clientId, {
+          type: 'error',
+          message: 'Invalid message format',
+          details: result.error.issues,
+          timestamp: new Date().toISOString()
+        });
+
+        return null;
+      }
+
+      return result.data;
+    } catch (error) {
+      Logger.error('Failed to parse WebSocket message', {
+        clientId,
+        error: formatErrorPayload(error)
+      });
+
+      this.sendToClient(clientId, {
+        type: 'error',
+        message: 'Malformed JSON payload',
+        timestamp: new Date().toISOString()
+      });
+
+      return null;
+    }
+  }
+
+  private shouldDeliverMessage(client: KitchenClient, message: KitchenBroadcastMessage): boolean {
+    if (!client.filters) {
+      return true;
+    }
+
+    const { filters } = client;
+
+    if (filters.ticketIds && filters.ticketIds.length > 0) {
+      if ('ticket' in message) {
+        const ticketId = (message.ticket as Record<string, unknown>)?.['id'];
+        if (ticketId && !filters.ticketIds.includes(String(ticketId))) {
+          return false;
+        }
+      }
+
+      if ('ticketId' in message && !filters.ticketIds.includes(message.ticketId)) {
+        return false;
+      }
+    }
+
+    if (filters.statuses && filters.statuses.length > 0 && 'ticket' in message) {
+      const status = (message.ticket as Record<string, unknown>)?.['status'];
+      if (status && !filters.statuses.includes(String(status))) {
+        return false;
+      }
+    }
+
+    if (filters.stations && filters.stations.length > 0 && 'ticket' in message) {
+      const stationId = (message.ticket as Record<string, unknown>)?.['stationId'];
+      if (stationId && !filters.stations.includes(String(stationId))) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   // Health check for WebSocket connections
@@ -227,7 +462,10 @@ export class WebSocketManager {
     }
 
     if (disconnectedClients.length > 0) {
-      console.log(`Cleaned up ${disconnectedClients.length} disconnected clients`);
+      Logger.info('Cleaned up disconnected WebSocket clients', {
+        count: disconnectedClients.length,
+        clientIds: disconnectedClients
+      });
     }
 
     return disconnectedClients.length;

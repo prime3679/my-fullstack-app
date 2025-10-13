@@ -8,6 +8,7 @@ import Logger from '../lib/logger';
 import { businessEventLogger } from '../lib/middleware';
 import { SocialAuthService, SocialLoginRequest, SocialLoginResponse } from '../lib/socialAuth';
 import { emailService, WelcomeSequenceContext } from '../lib/emailService';
+import { smsVerificationService } from '../lib/smsService';
 
 // Helper function to convert unknown errors to proper error objects
 function formatError(error: unknown): { name: string; message: string; stack?: string; code?: string } {
@@ -87,9 +88,6 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.code(409).send({ error: 'User already exists with this phone or email' });
       }
 
-      // Generate verification code for phone
-      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-      
       // Hash password if provided, otherwise we'll use SMS verification
       const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
 
@@ -125,12 +123,23 @@ export async function authRoutes(fastify: FastifyInstance) {
         signupMethod: password ? 'password' : 'sms'
       })(request);
 
-      // TODO: Send SMS verification code (integrate with Twilio/AWS SNS)
-      Logger.info('SMS verification code generated', { 
-        userId: user.id, 
-        phone, 
-        code: verificationCode // Remove in production
-      });
+      let verificationDetails: { expiresAt: Date; sid?: string; code?: string } | null = null;
+
+      if (!password) {
+        try {
+          verificationDetails = await smsVerificationService.createAndSendCode(phone, {
+            userId: user.id,
+            context: {
+              flow: 'signup',
+              restaurantId,
+              referralSource
+            }
+          });
+        } catch (error) {
+          Logger.error('Failed to send SMS verification code', { error: formatError(error), userId: user.id, phone });
+          return reply.code(502).send({ error: 'Failed to send verification code. Please try again later.' });
+        }
+      }
 
       // Generate JWT token
       const token = jwt.sign(
@@ -175,7 +184,10 @@ export async function authRoutes(fastify: FastifyInstance) {
           marketingOptIn: user.marketingOptIn
         },
         token,
-        verificationRequired: !password // If no password, require SMS verification
+        verificationRequired: !password,
+        verificationExpiresAt: verificationDetails?.expiresAt,
+        verificationSid: verificationDetails?.sid,
+        testVerificationCode: verificationDetails?.code
       };
 
     } catch (error) {
@@ -201,7 +213,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       const { identifier, password, verificationCode } = signinSchema.parse(request.body);
 
       // Find user by phone or email
-      const user = await db.user.findFirst({
+      let user = await db.user.findFirst({
         where: {
           OR: [
             { phone: identifier },
@@ -223,8 +235,31 @@ export async function authRoutes(fastify: FastifyInstance) {
       if (password && user.hashedPassword) {
         authenticated = await bcrypt.compare(password, user.hashedPassword);
       } else if (verificationCode) {
-        // TODO: Verify SMS code (implement with your SMS provider)
-        authenticated = verificationCode.length === 6; // Simplified for demo
+        if (!user.phone) {
+          return reply.code(400).send({ error: 'SMS verification is not available for this account.' });
+        }
+
+        const phoneToVerify = user.phone;
+        const verificationResult = await smsVerificationService.verifyCode(phoneToVerify, verificationCode);
+
+        if (!verificationResult.success) {
+          const failureMessage = verificationResult.failureReason === 'CODE_EXPIRED'
+            ? 'Verification code expired. Please request a new code.'
+            : verificationResult.failureReason === 'MAX_ATTEMPTS'
+              ? 'Too many incorrect attempts. Please request a new verification code.'
+              : 'Invalid verification code.';
+
+          return reply.code(401).send({ error: failureMessage, reason: verificationResult.failureReason });
+        }
+
+        authenticated = true;
+
+        if (!user.phoneVerifiedAt) {
+          user = await db.user.update({
+            where: { id: user.id },
+            data: { phoneVerifiedAt: new Date() }
+          });
+        }
       }
 
       if (!authenticated) {
@@ -299,11 +334,16 @@ export async function authRoutes(fastify: FastifyInstance) {
         }
       });
 
-      // Generate verification code
-      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-      
-      // TODO: Send SMS
-      Logger.info('Quick signup SMS sent', { userId: user.id, phone, code: verificationCode });
+      let verificationDetails: { expiresAt: Date; sid?: string; code?: string } | null = null;
+      try {
+        verificationDetails = await smsVerificationService.createAndSendCode(phone, {
+          userId: user.id,
+          context: { flow: 'quick-signup' }
+        });
+      } catch (error) {
+        Logger.error('Quick signup SMS failed', { error: formatError(error), userId: user.id, phone });
+        return reply.code(502).send({ error: 'Failed to send verification code. Please try again later.' });
+      }
 
       // Log business event
       businessEventLogger('USER_QUICK_SIGNUP', {
@@ -314,7 +354,10 @@ export async function authRoutes(fastify: FastifyInstance) {
         success: true,
         message: `Verification code sent to ${phone}`,
         userId: user.id,
-        verificationRequired: true
+        verificationRequired: true,
+        verificationExpiresAt: verificationDetails?.expiresAt,
+        verificationSid: verificationDetails?.sid,
+        testVerificationCode: verificationDetails?.code
       };
 
     } catch (error) {
@@ -328,19 +371,32 @@ export async function authRoutes(fastify: FastifyInstance) {
     try {
       const { phone, code } = verifyPhoneSchema.parse(request.body);
 
-      // TODO: Verify actual SMS code with your provider
-      // For demo, accept any 6-digit code
-      if (code.length !== 6) {
-        return reply.code(400).send({ error: 'Invalid verification code' });
+      const verificationResult = await smsVerificationService.verifyCode(phone, code);
+
+      if (!verificationResult.success) {
+        const failureMessage = verificationResult.failureReason === 'CODE_EXPIRED'
+          ? 'Verification code expired. Please request a new code.'
+          : verificationResult.failureReason === 'MAX_ATTEMPTS'
+            ? 'Too many incorrect attempts. Please request a new verification code.'
+            : 'Invalid verification code.';
+
+        return reply.code(400).send({ error: failureMessage, reason: verificationResult.failureReason });
       }
 
-      const user = await db.user.findFirst({ 
+      const user = await db.user.findFirst({
         where: { phone },
         include: { dinerProfile: true }
       });
 
       if (!user) {
         return reply.code(404).send({ error: 'User not found' });
+      }
+
+      if (!user.phoneVerifiedAt) {
+        await db.user.update({
+          where: { id: user.id },
+          data: { phoneVerifiedAt: new Date() }
+        });
       }
 
       // Generate JWT token

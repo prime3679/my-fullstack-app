@@ -93,13 +93,22 @@ export async function checkinRoutes(fastify: FastifyInstance) {
               status: 'PENDING',
               estimatedPrepMinutes: Math.max(estimatedPrepTime, 5), // Minimum 5 minutes
               fireAt: new Date(), // Fire immediately on check-in
-              itemsJson: reservation.preOrder.items.map((item: any) => ({
-                name: item.name,
-                quantity: item.quantity,
-                modifiers: item.modifiersJson,
-                notes: item.notes,
-                allergens: item.allergensJson
-              }))
+              itemsJson: reservation.preOrder.items.map((item: any) => {
+                const modifiersPayload = item.modifiersJson;
+                const modifiers = Array.isArray(modifiersPayload)
+                  ? modifiersPayload
+                  : Array.isArray(modifiersPayload?.details)
+                    ? modifiersPayload.details
+                    : [];
+
+                return {
+                  name: item.name,
+                  quantity: item.quantity,
+                  modifiers,
+                  notes: item.notes,
+                  allergens: item.allergensJson || []
+                };
+              })
             }
           });
 
