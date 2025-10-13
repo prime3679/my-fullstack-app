@@ -166,11 +166,11 @@ describe('Check-in System', () => {
       // Verify in database
       const reservation = await prisma.reservation.findUnique({
         where: { id: bookedReservationId },
-        include: { checkIn: true, kitchenTicket: true }
+        include: { checkin: true, kitchenTicket: true }
       });
       
       expect(reservation?.status).toBe('CHECKED_IN');
-      expect(reservation?.checkIn).toBeTruthy();
+      expect(reservation?.checkin).toBeTruthy();
       expect(reservation?.kitchenTicket).toBeTruthy();
     });
 
@@ -523,7 +523,7 @@ describe('Check-in System', () => {
         .expect(200);
 
       const qrData = JSON.parse(response.body.data.qrData);
-      expect(qrData.url).toStartWith('https://example.com');
+      expect(qrData.url).toMatch(/^https:\/\/example\.com/);
 
       // Restore original value
       if (originalUrl) {
