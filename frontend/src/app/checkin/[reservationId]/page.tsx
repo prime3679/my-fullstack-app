@@ -320,9 +320,10 @@ export default function CheckInPage() {
   );
 }
 
-// API functions
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 async function fetchCheckInStatus(reservationId: string): Promise<CheckInStatusResponse> {
-  const response = await fetch(`/api/v1/checkin/status/${reservationId}`);
+  const response = await fetch(`${API_BASE}/api/v1/checkin/status/${reservationId}`);
   if (!response.ok) {
     throw new Error('Failed to fetch check-in status');
   }
@@ -334,7 +335,7 @@ async function performCheckIn(
   locationId: string, 
   tableId?: string
 ): Promise<CheckInResponse> {
-  const response = await fetch('/api/v1/checkin/scan', {
+  const response = await fetch(`${API_BASE}/api/v1/checkin/scan`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
