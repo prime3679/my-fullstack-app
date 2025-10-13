@@ -137,10 +137,29 @@ export function useKitchenWebSocket(options: UseKitchenWebSocketOptions) {
     if (!enabled || !restaurantId) return;
 
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.hostname;
-      const port = process.env.NODE_ENV === 'development' ? '3001' : window.location.port;
-      const wsUrl = `${protocol}//${host}:${port}/ws/kitchen/${restaurantId}`;
+      const defaultProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const defaultHost = window.location.hostname;
+      const defaultPort = process.env.NODE_ENV === 'development' ? '3001' : window.location.port;
+
+      let protocol = defaultProtocol;
+      let host = defaultHost;
+      let port = defaultPort;
+
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+
+      if (apiBase) {
+        try {
+          const parsedUrl = new URL(apiBase);
+          protocol = parsedUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+          host = parsedUrl.hostname;
+          port = parsedUrl.port;
+        } catch (error) {
+          console.warn('Invalid NEXT_PUBLIC_API_URL for WebSocket connection, falling back to window location.', error);
+        }
+      }
+
+      const portSegment = port ? `:${port}` : '';
+      const wsUrl = `${protocol}//${host}${portSegment}/ws/kitchen/${restaurantId}`;
 
       console.log('Connecting to WebSocket:', wsUrl);
 
