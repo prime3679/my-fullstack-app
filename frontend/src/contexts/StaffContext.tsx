@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../lib/api';
 import { ClientLogger } from '../lib/logger';
 
 interface StaffUser {
@@ -71,7 +70,12 @@ export function StaffProvider({ children }: { children: React.ReactNode }) {
         // Invalid token, clear storage
         localStorage.removeItem('staff_token');
         localStorage.removeItem('staff_user');
-        ClientLogger.error('Invalid staff token found', { error });
+        ClientLogger.error('Invalid staff token found', { 
+          error: { 
+            name: (error as Error).name, 
+            message: (error as Error).message 
+          } 
+        });
       }
     }
     setIsLoading(false);
@@ -113,7 +117,12 @@ export function StaffProvider({ children }: { children: React.ReactNode }) {
 
       return { success: true };
     } catch (error) {
-      ClientLogger.error('Staff login error', { error });
+      ClientLogger.error('Staff login error', { 
+        error: { 
+          name: (error as Error).name, 
+          message: (error as Error).message 
+        } 
+      });
       return { success: false, error: 'Network error' };
     } finally {
       setIsLoading(false);
@@ -179,7 +188,12 @@ export function StaffProvider({ children }: { children: React.ReactNode }) {
 
       return { success: true };
     } catch (error) {
-      ClientLogger.error('Staff onboarding error', { error });
+      ClientLogger.error('Staff onboarding error', { 
+        error: { 
+          name: (error as Error).name, 
+          message: (error as Error).message 
+        } 
+      });
       return { success: false, error: 'Network error' };
     }
   };
@@ -229,7 +243,12 @@ export function StaffProvider({ children }: { children: React.ReactNode }) {
 
       return { success: true };
     } catch (error) {
-      ClientLogger.error('Staff profile update error', { error });
+      ClientLogger.error('Staff profile update error', { 
+        error: { 
+          name: (error as Error).name, 
+          message: (error as Error).message 
+        } 
+      });
       return { success: false, error: 'Network error' };
     }
   };

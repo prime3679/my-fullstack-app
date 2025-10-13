@@ -3,7 +3,7 @@ import { db } from '../lib/db';
 
 // Initialize Stripe with test keys for development
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51234...', {
-  apiVersion: '2024-11-20.acacia'
+  apiVersion: '2025-08-27.basil'
 });
 
 export class PaymentService {
@@ -32,6 +32,10 @@ export class PaymentService {
 
     // Calculate final amount with tip
     const finalAmount = preOrder.total + tipAmount;
+
+    if (!preOrder.reservation.user) {
+      throw new Error('User not found for reservation');
+    }
 
     // Create Stripe customer if doesn't exist
     let customerId = preOrder.reservation.user.stripeCustomerId;
@@ -160,6 +164,14 @@ export class PaymentService {
 
     if (!preOrder) {
       throw new Error('Pre-order not found');
+    }
+
+    const existingTicket = await db.kitchenTicket.findUnique({
+      where: { reservationId: preOrder.reservationId }
+    });
+
+    if (existingTicket) {
+      return;
     }
 
     // Calculate estimated prep time (sum of all item prep times)

@@ -25,7 +25,7 @@ export function QuickSignup({
     name: ''
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [socialLoading, setSocialLoading] = useState(false);
+  const [socialLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const formatPhone = (value: string) => {
@@ -111,9 +111,9 @@ export function QuickSignup({
         id: response.user.id,
         email: response.user.email,
         name: response.user.name,
-        role: response.user.role as any,
-        phone: null,
-        dinerProfile: null
+        role: response.user.role,
+        phone: '',
+        marketingOptIn: false
       });
 
       ClientLogger.businessEvent('SOCIAL_SIGNUP_SUCCESS', {
@@ -128,14 +128,26 @@ export function QuickSignup({
       onSuccess?.(response.user.id);
       
     } catch (error) {
-      ClientLogger.error('Social signup success handler error', { error });
+      const errorObj = error instanceof Error ? error : new Error('Unknown error');
+      ClientLogger.error('Social signup success handler error', { 
+        error: {
+          name: errorObj.name,
+          message: errorObj.message,
+          stack: errorObj.stack
+        }
+      });
       setError('Authentication successful but setup failed. Please try again.');
     }
   };
 
   const handleSocialError = (error: string) => {
     setError(`Social sign-in failed: ${error}`);
-    ClientLogger.error('Social signup error', { error });
+    ClientLogger.error('Social signup error', { 
+      error: {
+        name: 'SocialSignupError',
+        message: error,
+      }
+    });
   };
 
   return (

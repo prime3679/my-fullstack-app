@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { Logger } from './logger';
 import { prisma } from './db';
+import { scheduleEmail as queueScheduleEmail } from './jobs/emailJobs';
 
 // Helper function to convert unknown errors to proper error objects
 function formatError(error: unknown): { name: string; message: string; stack?: string; code?: string } {
@@ -264,35 +265,23 @@ export class EmailService {
   }
 
   private async scheduleEmail(templateName: string, context: WelcomeSequenceContext, options: { delay: number }): Promise<void> {
-    // In production, you'd use a proper job queue (Bull, Agenda, etc.)
-    // For now, we'll use setTimeout for demonstration
-    setTimeout(async () => {
-      try {
-        const templateData = {
-          userName: context.userName,
-          restaurantName: context.restaurantName,
-          appUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
-          year: new Date().getFullYear(),
-          supportEmail: 'support@lacarta.com'
-        };
+    const templateData = {
+      userName: context.userName,
+      restaurantName: context.restaurantName,
+      appUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+      year: new Date().getFullYear(),
+      supportEmail: 'support@lacarta.com'
+    };
 
-        await this.sendTemplateEmail(templateName, context.userEmail, templateData);
-        
-        Logger.info('Scheduled email sent', { 
-          templateName, 
-          userId: context.userId, 
-          delay: options.delay 
-        });
-      } catch (error) {
-        Logger.error('Failed to send scheduled email', { 
-          error: formatError(error), 
-          templateName, 
-          userId: context.userId 
-        });
-      }
-    }, options.delay);
+    await queueScheduleEmail(
+      templateName,
+      context.userEmail,
+      templateData,
+      options.delay,
+      context.userId
+    );
 
-    Logger.info('Email scheduled', { 
+    Logger.info('Email scheduled in queue', { 
       templateName, 
       userId: context.userId, 
       delay: options.delay 

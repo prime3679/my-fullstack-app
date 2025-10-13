@@ -1,6 +1,6 @@
 // Shared types between frontend and backend
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
@@ -39,7 +39,7 @@ export interface Table {
   id: string;
   label: string;
   seats: number;
-  featuresJson?: any;
+  featuresJson?: Record<string, unknown>;
 }
 
 export interface Reservation {
@@ -78,17 +78,7 @@ export interface PreOrder {
   total: number;
   currency: string;
   items: PreOrderItem[];
-}
-
-export interface PreOrderItem {
-  id: string;
-  sku: string;
-  name: string;
-  quantity: number;
-  price: number;
-  modifiersJson?: any;
-  notes?: string;
-  allergensJson?: any;
+  reservation?: Reservation;
 }
 
 export interface AvailabilitySlot {
@@ -162,7 +152,7 @@ export interface MenuItem {
   is86: boolean;
   allergensJson: string[] | null;
   dietaryTags: string[];
-  nutritionJson: any;
+  nutritionJson: Record<string, unknown> | null;
   sortOrder: number;
   category: {
     id: string;
@@ -220,11 +210,17 @@ export interface PreOrder {
   total: number;
   currency: string;
   items: PreOrderItem[];
-  payments?: any[]; // Will be defined when we add Stripe integration
+  payments?: Array<Record<string, unknown>>; // Will be defined when we add Stripe integration
+  reservation?: Reservation;
 }
 
 export interface CreatePreOrderRequest {
-  reservationId: string;
+  reservationId?: string;
+  guestInfo?: {
+    name: string;
+    email: string;
+    phone?: string;
+  };
   items: Array<{
     sku: string;
     quantity: number;

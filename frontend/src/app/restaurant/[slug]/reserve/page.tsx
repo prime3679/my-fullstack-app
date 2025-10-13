@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '../../../../lib/api';
@@ -46,7 +46,7 @@ export default function ReservePage() {
   });
 
   // Check availability for selected date
-  const { data: availabilityData, isLoading: loadingAvailability, refetch: refetchAvailability } = useQuery({
+  const { data: availabilityData, isLoading: loadingAvailability } = useQuery({
     queryKey: ['availability', restaurantData?.data?.id, formData.partySize, formData.selectedDate],
     queryFn: () => restaurantData?.data?.id 
       ? api.checkAvailability(restaurantData.data.id, formData.partySize, formData.selectedDate)
@@ -56,10 +56,12 @@ export default function ReservePage() {
 
   // Create reservation mutation
   const createReservationMutation = useMutation({
-    mutationFn: (data: any) => api.createReservation(data),
+    mutationFn: (data: { restaurantId: string; partySize: number; startAt: string; guestName: string; guestEmail: string; guestPhone: string; specialRequests?: string }) => api.createReservation(data),
     onSuccess: (response) => {
-      const reservationId = response.data.id;
-      router.push(`/restaurant/${restaurantSlug}/reservation/${reservationId}/confirmation`);
+      const reservationId = response.data?.id;
+      if (reservationId) {
+        router.push(`/restaurant/${restaurantSlug}/reservation/${reservationId}/confirmation`);
+      }
     },
     onError: (error) => {
       console.error('Reservation failed:', error);

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Elements } from '@stripe/react-stripe-js';
 import { stripePromise } from '../../../../../../lib/stripe';
-import { api } from '../../../../../../lib/api';
+import { api, API_BASE } from '../../../../../../lib/api';
 import Link from 'next/link';
 import { CheckoutForm } from '../../../../../../components/CheckoutForm';
 
@@ -28,19 +28,12 @@ export default function PreOrderPaymentPage() {
 
   const preOrder = preOrderData?.data;
 
-  // Create payment intent when component mounts or tip changes
-  useEffect(() => {
-    if (preOrder && !clientSecret) {
-      createPaymentIntent();
-    }
-  }, [preOrder, tipAmount]);
-
-  const createPaymentIntent = async () => {
-    if (isCreatingPayment) return;
+  const createPaymentIntent = useCallback(async () => {
+    if (isCreatingPayment || !preOrder) return;
     
     setIsCreatingPayment(true);
     try {
-      const response = await fetch(`/api/v1/payments/payment-intent`, {
+      const response = await fetch(`${API_BASE}/payments/payment-intent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,7 +56,14 @@ export default function PreOrderPaymentPage() {
     } finally {
       setIsCreatingPayment(false);
     }
-  };
+  }, [preOrder, isCreatingPayment, tipAmount]);
+
+  // Create payment intent when component mounts
+  useEffect(() => {
+    if (preOrder && !clientSecret) {
+      createPaymentIntent();
+    }
+  }, [preOrder, clientSecret, createPaymentIntent]);
 
   const handleTipChange = (amount: number) => {
     setTipAmount(amount);
@@ -85,14 +85,14 @@ export default function PreOrderPaymentPage() {
     );
   }
 
-  if (error || !preOrder) {
+  if (error || !preOrder || !preOrder.reservation || !preOrder.reservation.restaurant) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-600 text-xl mb-4">❌</div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Order not found</h2>
           <p className="text-gray-600 mb-4">
-            The pre-order you're trying to pay for could not be found.
+            The pre-order you&apos;re trying to pay for could not be found.
           </p>
           <Link href="/" className="text-amber-600 hover:text-amber-700">← Back to restaurants</Link>
         </div>

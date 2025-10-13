@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { 
@@ -21,7 +20,7 @@ import {
   CheckCircle,
   AlertCircle 
 } from 'lucide-react';
-import type { PreOrderCalculation, CreatePreOrderRequest } from '../../shared/types';
+import type { PreOrderCalculation, CreatePreOrderRequest } from '../../../shared/types';
 
 interface CartItem {
   sku: string;
@@ -66,13 +65,7 @@ export default function PreOrderCart({
     phone: ''
   });
 
-  useEffect(() => {
-    if (cart.length > 0 && isOpen) {
-      calculatePreOrder();
-    }
-  }, [cart, isOpen]);
-
-  const calculatePreOrder = async () => {
+  const calculatePreOrder = useCallback(async () => {
     if (!cart.length) return;
 
     setLoading(true);
@@ -87,13 +80,21 @@ export default function PreOrderCart({
       }));
 
       const response = await api.calculatePreOrder(restaurantId, items);
-      setCalculation(response.data);
+      if (response.data) {
+        setCalculation(response.data);
+      }
     } catch (error) {
       console.error('Failed to calculate pre-order:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [cart, restaurantId]);
+
+  useEffect(() => {
+    if (cart.length > 0 && isOpen) {
+      calculatePreOrder();
+    }
+  }, [cart, isOpen, calculatePreOrder]);
 
   const updateQuantity = (index: number, quantity: number) => {
     if (quantity <= 0) {
@@ -141,7 +142,7 @@ export default function PreOrderCart({
 
       const response = await api.createPreOrder(orderData);
       
-      if (response.success && onOrderComplete) {
+      if (response.success && response.data && onOrderComplete) {
         onOrderComplete(response.data.id);
         onUpdateCart([]); // Clear cart
         setIsOpen(false);
@@ -181,7 +182,7 @@ export default function PreOrderCart({
 
       const response = await api.createPreOrder(orderData);
       
-      if (response.success) {
+      if (response.success && response.data) {
         onUpdateCart([]); // Clear cart
         setIsOpen(false);
         router.push(`/restaurant/${restaurantId}/preorder/${response.data.id}/payment`);
@@ -337,7 +338,7 @@ export default function PreOrderCart({
                 <CardHeader>
                   <CardTitle className="text-lg">Contact Information</CardTitle>
                   <CardDescription>
-                    We'll use this information to confirm your order
+                    We&apos;ll use this information to confirm your order
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -432,7 +433,7 @@ export default function PreOrderCart({
                 <div className="text-sm text-blue-800">
                   <div className="font-medium mb-1">Pre-Order Benefits</div>
                   <ul className="space-y-1 text-xs">
-                    <li>• Your food will be timed to arrive shortly after you're seated</li>
+                    <li>• Your food will be timed to arrive shortly after you&apos;re seated</li>
                     <li>• Skip the wait and enjoy faster service</li>
                     <li>• Make modifications up until 30 minutes before your reservation</li>
                   </ul>

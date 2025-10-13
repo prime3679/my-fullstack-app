@@ -67,7 +67,14 @@ export function StaffManagement() {
       }
     } catch (error) {
       setError('Network error loading staff');
-      ClientLogger.error('Error fetching staff list', { error });
+      const errorObj = error instanceof Error ? error : new Error('Unknown error');
+      ClientLogger.error('Error fetching staff list', { 
+        error: {
+          name: errorObj.name,
+          message: errorObj.message,
+          stack: errorObj.stack
+        }
+      });
     } finally {
       setIsLoading(false);
     }
@@ -96,7 +103,7 @@ export function StaffManagement() {
           email: inviteData.email.trim(),
           name: inviteData.name.trim(),
           role: inviteData.role,
-          phone: inviteData.phone.trim() || undefined
+          phone: inviteData.phone?.trim() || undefined
         }),
       });
 
@@ -118,7 +125,14 @@ export function StaffManagement() {
       }
     } catch (error) {
       setError('Network error. Please try again.');
-      ClientLogger.error('Error inviting staff', { error });
+      const errorObj = error instanceof Error ? error : new Error('Unknown error');
+      ClientLogger.error('Error inviting staff', { 
+        error: {
+          name: errorObj.name,
+          message: errorObj.message,
+          stack: errorObj.stack
+        }
+      });
     } finally {
       setIsInviting(false);
     }
@@ -256,7 +270,7 @@ export function StaffManagement() {
                 </label>
                 <select
                   value={inviteData.role}
-                  onChange={(e) => setInviteData(prev => ({ ...prev, role: e.target.value as any }))}
+                  onChange={(e) => setInviteData(prev => ({ ...prev, role: e.target.value as InviteStaffData['role'] }))}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 >

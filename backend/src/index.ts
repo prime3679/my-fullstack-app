@@ -11,11 +11,13 @@ import { kitchenRoutes } from './routes/kitchen';
 import { checkinRoutes } from './routes/checkin';
 import { authRoutes } from './routes/auth';
 import { staffRoutes } from './routes/staff';
-// import { paymentRoutes } from './routes/payments';
+import { paymentRoutes } from './routes/payments';
 import { WebSocketManager, websocketManager } from './lib/websocketManager';
 import { requestLoggingPlugin } from './lib/middleware';
 import { SocialAuthService } from './lib/socialAuth';
 import { emailService } from './lib/emailService';
+import { getQueueHealth, closeQueue } from './lib/jobQueue';
+import './lib/jobs/emailJobs'; // Initialize job processors
 import Logger from './lib/logger';
 import dotenv from 'dotenv';
 
@@ -33,7 +35,8 @@ async function start() {
     await fastify.register(helmet);
     await fastify.register(cors, {
       origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-      credentials: true
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
     });
     await fastify.register(websocket);
     
@@ -43,8 +46,10 @@ async function start() {
     // Initialize social authentication
     SocialAuthService.initialize();
     
-    // Test email service connection
-    const emailConnected = await emailService.testConnection();
+    // Test email service connection (with timeout to avoid blocking startup)
+    const emailConnectionPromise = emailService.testConnection();
+    const timeoutPromise = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 3000));
+    const emailConnected = await Promise.race([emailConnectionPromise, timeoutPromise]);
     Logger.info('Email service initialization', { connected: emailConnected });
 
     // Register routes
@@ -56,7 +61,7 @@ async function start() {
     await fastify.register(preOrderRoutes, { prefix: '/api/v1/preorders' });
     await fastify.register(kitchenRoutes, { prefix: '/api/v1/kitchen' });
     await fastify.register(checkinRoutes, { prefix: '/api/v1/checkin' });
-    // await fastify.register(paymentRoutes, { prefix: '/api/v1/payments' });
+    await fastify.register(paymentRoutes, { prefix: '/api/v1/payments' });
 
     // Initialize WebSocket manager
     const wsManager = new WebSocketManager(fastify);
@@ -68,10 +73,12 @@ async function start() {
     // Health check endpoint
     fastify.get('/api/health', async (request, reply) => {
       const dbHealth = await db.$queryRaw`SELECT 1 as connected`;
+      const queueHealth = await getQueueHealth();
       return {
         status: 'OK',
         message: 'La Carta server is running',
         database: dbHealth ? 'connected' : 'disconnected',
+        queue: queueHealth,
         timestamp: new Date().toISOString()
       };
     });
@@ -178,6 +185,7 @@ async function start() {
 const gracefulShutdown = async () => {
   try {
     Logger.info('Shutting down server gracefully', { action: 'SERVER_SHUTDOWN_INITIATED' });
+    await closeQueue();
     await db.$disconnect();
     await fastify.close();
     Logger.info('Server shut down successfully', { action: 'SERVER_SHUTDOWN_COMPLETED' });

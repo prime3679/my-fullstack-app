@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { ClientLogger } from '../lib/logger';
 
 interface User {
@@ -51,22 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
-  // Initialize auth state from localStorage
-  useEffect(() => {
-    const storedToken = localStorage.getItem('auth_token');
-    const storedUser = localStorage.getItem('auth_user');
-
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-      // Verify token is still valid
-      fetchCurrentUser(storedToken);
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const fetchCurrentUser = async (authToken: string) => {
+  const fetchCurrentUser = useCallback(async (authToken: string) => {
     try {
       const response = await fetch(`${API_BASE}/api/v1/auth/me`, {
         headers: {
@@ -94,7 +79,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [API_BASE]);
+
+  // Initialize auth state from localStorage
+  useEffect(() => {
+    const storedToken = localStorage.getItem('auth_token');
+    const storedUser = localStorage.getItem('auth_user');
+
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+      // Verify token is still valid
+      fetchCurrentUser(storedToken);
+    } else {
+      setIsLoading(false);
+    }
+  }, [fetchCurrentUser]);
 
   const clearAuthState = () => {
     setUser(null);

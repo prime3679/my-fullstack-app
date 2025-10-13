@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { API_BASE } from '../../../lib/api';
 
 interface Reservation {
   id: string;
@@ -120,7 +121,7 @@ export default function CheckInPage() {
             <div className="text-red-500 text-6xl mb-4">⚠️</div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Reservation Not Found</h1>
             <p className="text-gray-600 mb-6">
-              We couldn't find a reservation with this ID. Please check with restaurant staff.
+              We couldn&apos;t find a reservation with this ID. Please check with restaurant staff.
             </p>
             <button
               onClick={() => window.history.back()}
@@ -145,7 +146,7 @@ export default function CheckInPage() {
             <div className="text-green-500 text-6xl mb-4">✅</div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome!</h1>
             <p className="text-gray-600 mb-6">
-              You're successfully checked in, {reservation.user.name}!
+              You&apos;re successfully checked in, {reservation.user.name}!
             </p>
             
             <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
@@ -197,7 +198,7 @@ export default function CheckInPage() {
             <div className="text-blue-500 text-6xl mb-4">ℹ️</div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Already Checked In</h1>
             <p className="text-gray-600 mb-6">
-              This reservation has already been checked in at {formatTime(checkin?.scannedAt || '')}.
+              This reservation has already been checked in.
             </p>
           </div>
         </div>
@@ -322,7 +323,7 @@ export default function CheckInPage() {
 
 // API functions
 async function fetchCheckInStatus(reservationId: string): Promise<CheckInStatusResponse> {
-  const response = await fetch(`/api/v1/checkin/status/${reservationId}`);
+  const response = await fetch(`${API_BASE}/checkin/status/${reservationId}`);
   if (!response.ok) {
     throw new Error('Failed to fetch check-in status');
   }
@@ -334,7 +335,7 @@ async function performCheckIn(
   locationId: string, 
   tableId?: string
 ): Promise<CheckInResponse> {
-  const response = await fetch('/api/v1/checkin/scan', {
+  const response = await fetch(`${API_BASE}/checkin/scan`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
