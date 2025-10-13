@@ -166,12 +166,14 @@ describe('Check-in System', () => {
       // Verify in database
       const reservation = await prisma.reservation.findUnique({
         where: { id: bookedReservationId },
-        include: { checkIn: true, kitchenTicket: true }
+        include: { checkin: true, kitchenTicket: true }
       });
-      
-      expect(reservation?.status).toBe('CHECKED_IN');
-      expect(reservation?.checkIn).toBeTruthy();
-      expect(reservation?.kitchenTicket).toBeTruthy();
+
+      const reservationWithRelations = reservation as any;
+
+      expect(reservationWithRelations?.status).toBe('CHECKED_IN');
+      expect(reservationWithRelations?.checkin).toBeTruthy();
+      expect(reservationWithRelations?.kitchenTicket).toBeTruthy();
     });
 
     it('should create kitchen ticket with pre-order items', async () => {
@@ -192,7 +194,11 @@ describe('Check-in System', () => {
       expect(kitchenTicket.itemsJson).toHaveLength(1);
       expect(kitchenTicket.itemsJson[0].name).toBe('Caesar Salad');
       expect(kitchenTicket.itemsJson[0].quantity).toBe(2);
-      expect(kitchenTicket.itemsJson[0].modifiers).toContain('extra-croutons');
+      const modifiers = kitchenTicket.itemsJson[0].modifiers;
+      const modifierNames = Array.isArray(modifiers)
+        ? modifiers.map((mod: any) => (typeof mod === 'string' ? mod : mod.name))
+        : [];
+      expect(modifierNames).toContain('extra-croutons');
     });
 
     it('should support manual check-in method', async () => {
@@ -523,7 +529,7 @@ describe('Check-in System', () => {
         .expect(200);
 
       const qrData = JSON.parse(response.body.data.qrData);
-      expect(qrData.url).toStartWith('https://example.com');
+      expect(qrData.url.startsWith('https://example.com')).toBe(true);
 
       // Restore original value
       if (originalUrl) {

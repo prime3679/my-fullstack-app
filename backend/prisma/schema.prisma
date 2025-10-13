@@ -79,6 +79,7 @@ model User {
   stripeCustomerId  String?  @map("stripe_customer_id")
   role              UserRole @default(DINER)
   restaurantId      String?  @map("restaurant_id") // For staff users
+  phoneVerifiedAt   DateTime? @map("phone_verified_at")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
@@ -89,6 +90,8 @@ model User {
   loyaltyAccounts LoyaltyAccount[]
   events          Event[]
   auditLogs       AuditLog[]
+  phoneVerifications PhoneVerificationCode[]
+  emailDeliveries EmailDelivery[]
 
   @@map("user")
 }
@@ -161,6 +164,8 @@ model PreOrderItem {
   modifiersJson Json?  @map("modifiers_json")
   notes         String?
   allergensJson Json?  @map("allergens_json")
+  unitPrice     Int?   @map("unit_price")
+  modifierTotal Int?   @map("modifier_total")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -260,6 +265,51 @@ model Event {
   @@map("event")
 }
 
+model PhoneVerificationCode {
+  id            String   @id @default(cuid())
+  phone         String
+  codeHash      String   @map("code_hash")
+  userId        String?  @map("user_id")
+  expiresAt     DateTime @map("expires_at")
+  verifiedAt    DateTime? @map("verified_at")
+  attemptCount  Int      @default(0) @map("attempt_count")
+  lastAttemptAt DateTime? @map("last_attempt_at")
+  lastSentAt    DateTime? @map("last_sent_at")
+  metadata      Json?    @map("metadata_json")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([phone])
+  @@index([expiresAt])
+  @@index([userId])
+  @@map("phone_verification_code")
+}
+
+model EmailDelivery {
+  id                String              @id @default(cuid())
+  userId            String?             @map("user_id")
+  templateName      String              @map("template_name")
+  to                String
+  status            EmailDeliveryStatus @default(PENDING)
+  providerMessageId String?             @map("provider_message_id")
+  scheduledAt       DateTime?           @map("scheduled_at")
+  sentAt            DateTime?           @map("sent_at")
+  errorMessage      String?             @map("error_message")
+  metadata          Json?               @map("metadata_json")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, templateName])
+  @@index([status, scheduledAt])
+  @@map("email_delivery")
+}
+
 model Embedding {
   id       String      @id @default(cuid())
   type     EmbeddingType
@@ -325,6 +375,14 @@ enum PaymentStatus {
   CAPTURED
   FAILED
   REFUNDED
+}
+
+enum EmailDeliveryStatus {
+  PENDING
+  SCHEDULED
+  SENT
+  FAILED
+  SKIPPED
 }
 
 enum CheckInMethod {
@@ -419,6 +477,7 @@ model Modifier {
   price           Int    @default(0) // Additional price in cents
   isAvailable     Boolean @default(true) @map("is_available")
   sortOrder       Int    @default(0) @map("sort_order")
+  allergensJson   Json?  @map("allergens_json")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

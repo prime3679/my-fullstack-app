@@ -1,5 +1,5 @@
 import { db } from '../lib/db';
-import { PreOrderStatus } from '@prisma/client';
+import { PreOrderStatus, Prisma } from '@prisma/client';
 
 export interface CreatePreOrderItemInput {
   sku: string;
@@ -28,9 +28,18 @@ export interface PreOrderCalculation {
     modifierPrice: number;
     totalPrice: number;
     modifiers: Array<{
+      id: string;
       name: string;
       price: number;
+      modifierGroupId: string;
+      modifierGroupName?: string;
+      allergens: string[];
     }>;
+    selections: Array<{
+      modifierGroupId: string;
+      modifierId: string;
+    }>;
+    allergens: string[];
   }>;
 }
 
@@ -71,7 +80,11 @@ export class PreOrderService {
       }
 
       let modifierPrice = 0;
-      const selectedModifiers = [];
+      const modifierDetails: PreOrderCalculation['items'][number]['modifiers'] = [];
+      const modifierSelections: PreOrderCalculation['items'][number]['selections'] = [];
+      const allergens = new Set<string>(
+        Array.isArray(menuItem.allergensJson) ? (menuItem.allergensJson as string[]) : []
+      );
 
       // Calculate modifier prices and validate selections
       if (orderItem.modifiers) {
@@ -97,9 +110,24 @@ export class PreOrderService {
           }
 
           modifierPrice += modifier.price;
-          selectedModifiers.push({
+          modifierSelections.push({
+            modifierGroupId: modifierGroup.modifierGroup.id,
+            modifierId: modifier.id
+          });
+
+          const modifierAllergens = Array.isArray(modifier.allergensJson)
+            ? (modifier.allergensJson as string[])
+            : [];
+
+          modifierAllergens.forEach(allergen => allergens.add(allergen));
+
+          modifierDetails.push({
+            id: modifier.id,
             name: modifier.name,
-            price: modifier.price
+            price: modifier.price,
+            modifierGroupId: modifierGroup.modifierGroup.id,
+            modifierGroupName: modifierGroup.modifierGroup.name,
+            allergens: modifierAllergens
           });
         }
 
@@ -128,7 +156,9 @@ export class PreOrderService {
         basePrice: itemBasePrice,
         modifierPrice,
         totalPrice: itemTotalPrice,
-        modifiers: selectedModifiers
+        modifiers: modifierDetails,
+        selections: modifierSelections,
+        allergens: Array.from(allergens)
       });
     }
 
@@ -196,9 +226,14 @@ export class PreOrderService {
             name: calculatedItem.name,
             quantity: orderItem.quantity,
             price: calculatedItem.totalPrice,
-            modifiersJson: calculatedItem.modifiers,
+            unitPrice: calculatedItem.basePrice + calculatedItem.modifierPrice,
+            modifierTotal: calculatedItem.modifierPrice * orderItem.quantity,
+            modifiersJson: {
+              selections: calculatedItem.selections,
+              details: calculatedItem.modifiers
+            },
             notes: orderItem.notes,
-            allergensJson: [] // TODO: Extract from menu item and modifiers
+            allergensJson: calculatedItem.allergens
           }
         });
       }
@@ -280,21 +315,22 @@ export class PreOrderService {
       throw new Error('Cannot modify pre-order that is not in draft status');
     }
 
-    const item = await db.preOrderItem.update({
-      where: { 
+    await db.preOrderItem.update({
+      where: {
         id: itemId,
-        preorderId: preOrderId 
+        preorderId: preOrderId
       },
       data: updates
     });
 
-    // If quantity changed, recalculate prices
-    if (updates.quantity) {
-      // TODO: Implement price recalculation
-      // This would require recalculating the entire pre-order
+    if (typeof updates.quantity === 'number') {
+      await this.recalculatePreOrderTotals(preOrderId);
     }
 
-    return item;
+    return db.preOrderItem.findUnique({
+      where: { id: itemId },
+      include: { preorder: true }
+    });
   }
 
   async removePreOrderItem(preOrderId: string, itemId: string) {
@@ -318,7 +354,7 @@ export class PreOrderService {
       }
     });
 
-    // TODO: Recalculate pre-order totals after item removal
+    await this.recalculatePreOrderTotals(preOrderId);
   }
 
   async updatePreOrderStatus(preOrderId: string, status: PreOrderStatus, actorId?: string) {
@@ -385,5 +421,87 @@ export class PreOrderService {
     });
 
     return preOrders;
+  }
+
+  private async recalculatePreOrderTotals(
+    preOrderId: string,
+    prismaClient: Prisma.TransactionClient | typeof db = db
+  ) {
+    const preOrder = await prismaClient.preOrder.findUnique({
+      where: { id: preOrderId },
+      include: {
+        items: {
+          orderBy: { createdAt: 'asc' }
+        },
+        reservation: {
+          include: {
+            restaurant: {
+              select: { id: true, currency: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!preOrder) {
+      throw new Error('Pre-order not found');
+    }
+
+    if (!preOrder.reservation) {
+      throw new Error('Pre-order is missing reservation context');
+    }
+
+    const itemsInput: CreatePreOrderItemInput[] = preOrder.items.map(item => {
+      const modifiersPayload = item.modifiersJson as any;
+      const selections = Array.isArray(modifiersPayload?.selections)
+        ? modifiersPayload.selections
+        : [];
+
+      return {
+        sku: item.sku,
+        quantity: item.quantity,
+        modifiers: selections
+      };
+    });
+
+    const calculation = await this.calculatePreOrder(
+      preOrder.reservation.restaurantId,
+      itemsInput
+    );
+
+    await prismaClient.preOrder.update({
+      where: { id: preOrderId },
+      data: {
+        subtotal: calculation.subtotal,
+        tax: calculation.tax,
+        total: calculation.total
+      }
+    });
+
+    await Promise.all(
+      preOrder.items.map((item, index) => {
+        const calculatedItem = calculation.items[index];
+
+        if (!calculatedItem) {
+          return prismaClient.preOrderItem.delete({ where: { id: item.id } });
+        }
+
+        return prismaClient.preOrderItem.update({
+          where: { id: item.id },
+          data: {
+            price: calculatedItem.totalPrice,
+            unitPrice: calculatedItem.basePrice + calculatedItem.modifierPrice,
+            modifierTotal: calculatedItem.modifierPrice * calculatedItem.quantity,
+            modifiersJson: {
+              selections: calculatedItem.selections,
+              details: calculatedItem.modifiers
+            },
+            allergensJson: calculatedItem.allergens
+          }
+        });
+      })
+    );
+
+    return calculation;
   }
 }

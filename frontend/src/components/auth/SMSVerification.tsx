@@ -12,10 +12,12 @@ interface SMSVerificationProps {
 }
 
 export function SMSVerification({ phone, onSuccess, onBack }: SMSVerificationProps) {
-  const { verifyPhone } = useAuth();
+  const { verifyPhone, resendVerificationCode } = useAuth();
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -93,6 +95,7 @@ export function SMSVerification({ phone, onSuccess, onBack }: SMSVerificationPro
   const handleVerify = async (verificationCode: string) => {
     setIsLoading(true);
     setError(null);
+    setStatusMessage(null);
 
     try {
       ClientLogger.userAction('SMS_VERIFICATION_ATTEMPTED', { phone });
@@ -121,10 +124,48 @@ export function SMSVerification({ phone, onSuccess, onBack }: SMSVerificationPro
   };
 
   const handleResendCode = async () => {
-    // TODO: Implement resend functionality
-    setTimeLeft(60);
-    setCanResend(false);
-    ClientLogger.userAction('SMS_CODE_RESEND', { phone });
+    if (!canResend || isResending) {
+      return;
+    }
+
+    ClientLogger.userAction('SMS_CODE_RESEND_REQUESTED', { phone });
+    setIsResending(true);
+    setError(null);
+    setStatusMessage(null);
+
+    try {
+      const result = await resendVerificationCode(phone);
+
+      if (result.success) {
+        const retryAfter = typeof result.retryAfterSeconds === 'number' ? result.retryAfterSeconds : 60;
+        setTimeLeft(retryAfter);
+        setCanResend(false);
+        setCode(['', '', '', '', '', '']);
+        inputRefs.current[0]?.focus();
+        setStatusMessage('We just sent a new verification code to your phone.');
+
+        if (result.testVerificationCode && process.env.NODE_ENV === 'development') {
+          console.info('Test verification code (resend):', result.testVerificationCode);
+        }
+      } else {
+        const retryAfter = typeof result.retryAfterSeconds === 'number' ? result.retryAfterSeconds : null;
+        if (retryAfter) {
+          setTimeLeft(retryAfter);
+          setCanResend(false);
+        }
+        setError(result.error || 'Unable to resend verification code right now.');
+      }
+    } catch (err) {
+      setError('Failed to resend verification code. Please try again later.');
+      ClientLogger.error('SMS resend unexpected error', {
+        error: {
+          name: (err as Error).name,
+          message: (err as Error).message
+        }
+      });
+    } finally {
+      setIsResending(false);
+    }
   };
 
   return (
@@ -145,6 +186,12 @@ export function SMSVerification({ phone, onSuccess, onBack }: SMSVerificationPro
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
           {error}
+        </div>
+      )}
+
+      {statusMessage && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-4">
+          {statusMessage}
         </div>
       )}
 
@@ -181,9 +228,10 @@ export function SMSVerification({ phone, onSuccess, onBack }: SMSVerificationPro
           ) : (
             <button
               onClick={handleResendCode}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline disabled:text-blue-300 disabled:no-underline"
+              disabled={isResending}
             >
-              Resend verification code
+              {isResending ? 'Sending…' : 'Resend verification code'}
             </button>
           )}
         </div>
