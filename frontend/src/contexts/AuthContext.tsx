@@ -25,6 +25,12 @@ interface AuthContextType {
   signup: (data: SignupData) => Promise<boolean>;
   quickSignup: (phone: string, name: string) => Promise<{ success: boolean; userId?: string; verificationRequired?: boolean }>;
   verifyPhone: (phone: string, code: string) => Promise<boolean>;
+  resendVerificationCode: (phone: string) => Promise<{
+    success: boolean;
+    retryAfterSeconds?: number;
+    testVerificationCode?: string;
+    error?: string;
+  }>;
   signout: () => void;
   updateProfile: (data: Partial<User>) => Promise<boolean>;
   setUser: (user: User | null) => void;
@@ -245,6 +251,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const resendVerificationCode = async (phone: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/auth/verify-phone/resend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        ClientLogger.businessEvent('SMS_CODE_RESENT', { phone });
+        return {
+          success: true,
+          retryAfterSeconds: result.retryAfterSeconds,
+          testVerificationCode: result.testVerificationCode,
+        };
+      }
+
+      ClientLogger.error('SMS resend failed', { error: result.error, reason: result.reason });
+      return {
+        success: false,
+        error: result.error,
+        retryAfterSeconds: result.retryAfterSeconds,
+      };
+    } catch (error) {
+      ClientLogger.error('SMS resend error', {
+        error: {
+          name: (error as Error).name,
+          message: (error as Error).message,
+        },
+      });
+      return {
+        success: false,
+        error: 'Failed to resend verification code.',
+      };
+    }
+  };
+
   const signout = () => {
     clearAuthState();
     ClientLogger.businessEvent('USER_SIGNED_OUT', { userId: user?.id });
@@ -273,6 +318,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signup,
         quickSignup,
         verifyPhone,
+        resendVerificationCode,
         signout,
         updateProfile,
         setUser,

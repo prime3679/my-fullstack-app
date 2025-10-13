@@ -77,9 +77,23 @@ export interface VerificationResult {
   failureReason?: 'CODE_EXPIRED' | 'MAX_ATTEMPTS' | 'NO_CODE' | 'INVALID_CODE';
 }
 
-const RESEND_INTERVAL_MS = parseInt(process.env.SMS_CODE_RESEND_INTERVAL_MS || '60000', 10);
+export const RESEND_INTERVAL_MS = parseInt(process.env.SMS_CODE_RESEND_INTERVAL_MS || '60000', 10);
 const CODE_EXPIRY_MS = parseInt(process.env.SMS_CODE_TTL_MS || '600000', 10); // 10 minutes default
 const MAX_ATTEMPTS = parseInt(process.env.SMS_CODE_MAX_ATTEMPTS || '5', 10);
+
+export type SmsVerificationErrorReason = 'TOO_SOON' | 'NO_ACTIVE_CODE' | 'ALREADY_VERIFIED';
+
+export class SmsVerificationError extends Error {
+  readonly reason: SmsVerificationErrorReason;
+  readonly retryAfterMs?: number;
+
+  constructor(reason: SmsVerificationErrorReason, message: string, retryAfterMs?: number) {
+    super(message);
+    this.name = 'SmsVerificationError';
+    this.reason = reason;
+    this.retryAfterMs = retryAfterMs;
+  }
+}
 
 function normalizePhone(phone: string): string {
   return phone.replace(/[^+\d]/g, '');
@@ -106,23 +120,10 @@ export class SmsVerificationService {
     return new ConsoleSmsProvider();
   }
 
-  async createAndSendCode(phone: string, options: VerificationRequestOptions = {}): Promise<{ expiresAt: Date; sid?: string; code?: string }>
-  {
-    const normalizedPhone = normalizePhone(phone);
-
-    const existing = await db.phoneVerificationCode.findFirst({
-      where: { phone: normalizedPhone },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    if (existing?.lastSentAt) {
-      const elapsed = Date.now() - existing.lastSentAt.getTime();
-      if (elapsed < RESEND_INTERVAL_MS) {
-        const waitMs = RESEND_INTERVAL_MS - elapsed;
-        throw new Error(`Verification code recently sent. Please wait ${Math.ceil(waitMs / 1000)} seconds before requesting another code.`);
-      }
-    }
-
+  private async generateAndSendCode(
+    normalizedPhone: string,
+    options: VerificationRequestOptions & { context?: Record<string, unknown> }
+  ): Promise<{ expiresAt: Date; sid?: string; code?: string }> {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const codeHash = await bcrypt.hash(code, 10);
     const expiresAt = new Date(Date.now() + CODE_EXPIRY_MS);
@@ -164,6 +165,103 @@ export class SmsVerificationService {
       sid,
       code: process.env.NODE_ENV === 'development' ? code : undefined
     };
+  }
+
+  async createAndSendCode(
+    phone: string,
+    options: VerificationRequestOptions = {}
+  ): Promise<{ expiresAt: Date; sid?: string; code?: string }> {
+    const normalizedPhone = normalizePhone(phone);
+
+    const existing = await db.phoneVerificationCode.findFirst({
+      where: { phone: normalizedPhone },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (existing?.lastSentAt) {
+      const elapsed = Date.now() - existing.lastSentAt.getTime();
+      if (elapsed < RESEND_INTERVAL_MS) {
+        const waitMs = RESEND_INTERVAL_MS - elapsed;
+        throw new SmsVerificationError(
+          'TOO_SOON',
+          `Verification code recently sent. Please wait ${Math.ceil(waitMs / 1000)} seconds before requesting another code.`,
+          waitMs
+        );
+      }
+    }
+
+    return this.generateAndSendCode(normalizedPhone, {
+      ...options,
+      context: options.context ?? undefined
+    });
+  }
+
+  async resendCode(
+    phone: string,
+    options: VerificationRequestOptions = {}
+  ): Promise<{ expiresAt: Date; sid?: string; code?: string }> {
+    const normalizedPhone = normalizePhone(phone);
+
+    const existing = await db.phoneVerificationCode.findFirst({
+      where: {
+        phone: normalizedPhone,
+        verifiedAt: null
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (!existing) {
+      throw new SmsVerificationError(
+        'NO_ACTIVE_CODE',
+        'No verification request found for this phone number. Please start verification again.'
+      );
+    }
+
+    if (existing.verifiedAt) {
+      throw new SmsVerificationError(
+        'ALREADY_VERIFIED',
+        'This phone number has already been verified.'
+      );
+    }
+
+    const lastSentTimestamp = (existing.lastSentAt ?? existing.createdAt).getTime();
+    const elapsed = Date.now() - lastSentTimestamp;
+    if (elapsed < RESEND_INTERVAL_MS) {
+      const waitMs = RESEND_INTERVAL_MS - elapsed;
+      throw new SmsVerificationError(
+        'TOO_SOON',
+        `Please wait ${Math.ceil(waitMs / 1000)} seconds before requesting another verification code.`,
+        waitMs
+      );
+    }
+
+    const existingMetadata = (existing.metadata as Record<string, unknown> | null) ?? {};
+    const previousResendCount = typeof (existingMetadata as any).resendCount === 'number'
+      ? (existingMetadata as any).resendCount as number
+      : 0;
+    const mergedContext = {
+      ...existingMetadata,
+      ...options.context,
+      resendCount: previousResendCount + 1,
+      lastResentAt: new Date().toISOString()
+    };
+
+    await db.phoneVerificationCode.updateMany({
+      where: {
+        phone: normalizedPhone,
+        verifiedAt: null
+      },
+      data: {
+        expiresAt: new Date(),
+        lastAttemptAt: new Date()
+      }
+    });
+
+    return this.generateAndSendCode(normalizedPhone, {
+      ...options,
+      userId: options.userId ?? existing.userId ?? undefined,
+      context: mergedContext
+    });
   }
 
   async verifyCode(phone: string, code: string): Promise<VerificationResult> {
