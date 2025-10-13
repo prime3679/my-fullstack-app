@@ -3,12 +3,15 @@ import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
+import type { Prisma } from '@prisma/client';
 import { db } from '../lib/db';
 import Logger from '../lib/logger';
 import { businessEventLogger } from '../lib/middleware';
 import { SocialAuthService, SocialLoginRequest, SocialLoginResponse } from '../lib/socialAuth';
 import { emailService, WelcomeSequenceContext } from '../lib/emailService';
 import { RESEND_INTERVAL_MS, SmsVerificationError, smsVerificationService } from '../lib/smsService';
+
+type UserWithProfile = Prisma.UserGetPayload<{ include: { dinerProfile: true } }>;
 
 // Helper function to convert unknown errors to proper error objects
 function formatError(error: unknown): { name: string; message: string; stack?: string; code?: string } {
@@ -219,7 +222,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       const { identifier, password, verificationCode } = signinSchema.parse(request.body);
 
       // Find user by phone or email
-      let user = await db.user.findFirst({
+      let user: UserWithProfile | null = await db.user.findFirst({
         where: {
           OR: [
             { phone: identifier },
@@ -261,11 +264,24 @@ export async function authRoutes(fastify: FastifyInstance) {
         authenticated = true;
 
         if (!user.phoneVerifiedAt) {
-          user = await db.user.update({
+          await db.user.update({
             where: { id: user.id },
             data: { phoneVerifiedAt: new Date() }
           });
+
+          user = await db.user.findUnique({
+            where: { id: user.id },
+            include: { dinerProfile: true }
+          });
+
+          if (!user) {
+            return reply.code(500).send({ error: 'User account unavailable after verification update' });
+          }
         }
+      }
+
+      if (!user) {
+        return reply.code(401).send({ error: 'Invalid credentials' });
       }
 
       if (!authenticated) {

@@ -1,5 +1,20 @@
 import Logger from '../logger';
 
+function formatError(error: unknown): { name: string; message: string; stack?: string } {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    };
+  }
+
+  return {
+    name: 'UnknownError',
+    message: String(error)
+  };
+}
+
 export interface EmailSequenceJob {
   deliveryId: string;
   templateName: string;
@@ -36,7 +51,7 @@ export class EmailSequenceQueue {
         Logger.error('Email queue job failed', {
           deliveryId: job.deliveryId,
           templateName: job.templateName,
-          error
+          error: formatError(error)
         });
       }
     };

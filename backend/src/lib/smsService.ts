@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import { PhoneVerificationCode } from '@prisma/client';
+import { PhoneVerificationCode, Prisma } from '@prisma/client';
 import { db } from './db';
 import Logger from './logger';
 
@@ -21,6 +21,14 @@ function formatErrorPayload(error: unknown) {
     name: 'UnknownError',
     message: String(error)
   };
+}
+
+function toJsonObject(data?: Record<string, unknown>): Prisma.JsonObject | undefined {
+  if (!data) {
+    return undefined;
+  }
+
+  return JSON.parse(JSON.stringify(data)) as Prisma.JsonObject;
 }
 
 class ConsoleSmsProvider implements SmsProvider {
@@ -135,7 +143,7 @@ export class SmsVerificationService {
         userId: options.userId,
         expiresAt,
         lastSentAt: new Date(),
-        metadata: options.context ?? undefined
+        metadata: toJsonObject(options.context)
       }
     });
 

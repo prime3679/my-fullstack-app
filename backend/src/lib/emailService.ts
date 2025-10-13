@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import handlebars from 'handlebars';
 import fs from 'fs';
 import path from 'path';
-import { EmailDeliveryStatus } from '@prisma/client';
+import { EmailDeliveryStatus, Prisma } from '@prisma/client';
 import { Logger } from './logger';
 import { prisma } from './db';
 import { EmailSequenceQueue, EmailSequenceJob } from './queues/emailSequenceQueue';
@@ -295,10 +295,12 @@ export class EmailService {
   ): Promise<string> {
     const templateData = this.getSequenceTemplateData(templateName, context);
     const scheduledAt = new Date(Date.now() + delayMs);
-    const metadata = {
-      context,
-      templateData
-    };
+    const metadata = JSON.parse(
+      JSON.stringify({
+        context,
+        templateData
+      })
+    ) as Prisma.JsonObject;
 
     const delivery = await prisma.emailDelivery.create({
       data: {
