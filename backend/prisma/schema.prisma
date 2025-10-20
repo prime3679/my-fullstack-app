@@ -16,6 +16,7 @@ model Restaurant {
   slug         String  @unique
   timezone     String  @default("America/New_York")
   currency     String  @default("USD")
+  taxRate      Float   @default(0.0825) @map("tax_rate") // Default 8.25% (NYC rate)
   posType      String? @map("pos_type")
   openTableId  String? @map("opentable_id")
   settingsJson Json?   @map("settings_json")

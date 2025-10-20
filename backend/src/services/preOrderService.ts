@@ -37,6 +37,16 @@ export interface PreOrderCalculation {
 export class PreOrderService {
 
   async calculatePreOrder(restaurantId: string, items: CreatePreOrderItemInput[]): Promise<PreOrderCalculation> {
+    // Get restaurant to access tax rate
+    const restaurant = await db.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { taxRate: true }
+    });
+
+    if (!restaurant) {
+      throw new Error('Restaurant not found');
+    }
+
     let subtotal = 0;
     const calculatedItems = [];
 
@@ -76,7 +86,7 @@ export class PreOrderService {
       // Calculate modifier prices and validate selections
       if (orderItem.modifiers) {
         for (const modSelection of orderItem.modifiers) {
-          const modifierGroup = menuItem.modifierGroups.find(mg => 
+          const modifierGroup = menuItem.modifierGroups.find(mg =>
             mg.modifierGroup.id === modSelection.modifierGroupId
           );
 
@@ -84,7 +94,7 @@ export class PreOrderService {
             throw new Error(`Modifier group not found for menu item ${menuItem.name}`);
           }
 
-          const modifier = modifierGroup.modifierGroup.modifiers.find(m => 
+          const modifier = modifierGroup.modifierGroup.modifiers.find(m =>
             m.id === modSelection.modifierId
           );
 
@@ -106,10 +116,10 @@ export class PreOrderService {
         // Validate required modifier groups
         const requiredGroups = menuItem.modifierGroups.filter(mg => mg.isRequired);
         for (const requiredGroup of requiredGroups) {
-          const hasSelection = orderItem.modifiers.some(mod => 
+          const hasSelection = orderItem.modifiers.some(mod =>
             mod.modifierGroupId === requiredGroup.modifierGroup.id
           );
-          
+
           if (!hasSelection) {
             throw new Error(`Required modifier group "${requiredGroup.modifierGroup.name}" not selected for ${menuItem.name}`);
           }
@@ -118,7 +128,7 @@ export class PreOrderService {
 
       const itemBasePrice = menuItem.price;
       const itemTotalPrice = (itemBasePrice + modifierPrice) * orderItem.quantity;
-      
+
       subtotal += itemTotalPrice;
 
       calculatedItems.push({
@@ -132,9 +142,8 @@ export class PreOrderService {
       });
     }
 
-    // Simple tax calculation (8.25% NYC rate)
-    const taxRate = 0.0825;
-    const tax = Math.round(subtotal * taxRate);
+    // Calculate tax using restaurant's configured tax rate
+    const tax = Math.round(subtotal * restaurant.taxRate);
     const total = subtotal + tax;
 
     return {
