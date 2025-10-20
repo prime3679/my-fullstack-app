@@ -30,6 +30,10 @@ export class PaymentService {
       throw new Error('Pre-order not found');
     }
 
+    if (!preOrder.reservation.user) {
+      throw new Error('Reservation must have an associated user for payment');
+    }
+
     // Calculate final amount with tip
     const finalAmount = preOrder.total + tipAmount;
 
@@ -100,51 +104,131 @@ export class PaymentService {
         };
       }
 
-      // Create payment record
-      const payment = await db.payment.create({
-        data: {
-          preorderId: preOrderId,
-          stripePaymentIntentId: paymentIntentId,
-          amount: paymentIntent.amount,
-          status: 'CAPTURED',
-          capturedAt: new Date()
-        }
+      // Check if payment record already exists (idempotency)
+      const existingPayment = await db.payment.findUnique({
+        where: { stripePaymentIntentId: paymentIntentId }
       });
 
-      // Update pre-order status
-      const preOrder = await db.preOrder.update({
-        where: { id: preOrderId },
-        data: { 
-          status: 'AUTHORIZED',
-          // Update tip if it was included in payment
-          tip: paymentIntent.amount - (paymentIntent.metadata.originalAmount ? 
-            parseInt(paymentIntent.metadata.originalAmount) : paymentIntent.amount)
-        },
-        include: {
-          items: true,
-          payments: true,
-          reservation: {
-            include: {
-              user: true,
-              restaurant: true
+      if (existingPayment) {
+        // Payment already processed, return existing pre-order
+        const preOrder = await db.preOrder.findUnique({
+          where: { id: preOrderId },
+          include: {
+            items: true,
+            payments: true,
+            reservation: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true
+                  }
+                },
+                restaurant: true
+              }
             }
           }
-        }
+        });
+
+        return {
+          success: true,
+          preOrder
+        };
+      }
+
+      // Get pre-order to calculate tip
+      const currentPreOrder = await db.preOrder.findUnique({
+        where: { id: preOrderId },
+        select: { total: true, tip: true }
       });
 
-      // Create kitchen ticket
-      await this.createKitchenTicket(preOrderId);
+      if (!currentPreOrder) {
+        return {
+          success: false,
+          error: 'Pre-order not found'
+        };
+      }
+
+      // Calculate tip: payment amount minus original order total
+      const tipAmount = paymentIntent.amount - currentPreOrder.total;
+
+      // Create payment record and update pre-order in a transaction
+      const result = await db.$transaction(async (tx) => {
+        // Create payment record
+        await tx.payment.create({
+          data: {
+            preorderId: preOrderId,
+            stripePaymentIntentId: paymentIntentId,
+            amount: paymentIntent.amount,
+            status: 'CAPTURED',
+            capturedAt: new Date()
+          }
+        });
+
+        // Update pre-order status and tip
+        const updatedPreOrder = await tx.preOrder.update({
+          where: { id: preOrderId },
+          data: {
+            status: 'AUTHORIZED',
+            tip: tipAmount >= 0 ? tipAmount : 0, // Ensure non-negative tip
+            total: paymentIntent.amount // Update total to include tip
+          },
+          include: {
+            items: true,
+            payments: true,
+            reservation: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true
+                  }
+                },
+                restaurant: true
+              }
+            }
+          }
+        });
+
+        // Log event
+        await tx.event.create({
+          data: {
+            kind: 'payment_captured',
+            actorId: updatedPreOrder.reservation.userId,
+            restaurantId: updatedPreOrder.reservation.restaurantId,
+            reservationId: updatedPreOrder.reservationId,
+            payloadJson: {
+              paymentIntentId,
+              amount: paymentIntent.amount,
+              preOrderId
+            }
+          }
+        });
+
+        return updatedPreOrder;
+      });
+
+      // Create kitchen ticket (outside transaction to avoid blocking)
+      try {
+        await this.createKitchenTicket(preOrderId);
+      } catch (error) {
+        console.error('Failed to create kitchen ticket:', error);
+        // Don't fail the whole payment if kitchen ticket creation fails
+        // It can be created manually or via retry
+      }
 
       return {
         success: true,
-        preOrder
+        preOrder: result
       };
 
     } catch (error) {
       console.error('Payment confirmation error:', error);
       return {
         success: false,
-        error: 'Failed to process payment confirmation'
+        error: error instanceof Error ? error.message : 'Failed to process payment confirmation'
       };
     }
   }
@@ -154,7 +238,11 @@ export class PaymentService {
       where: { id: preOrderId },
       include: {
         items: true,
-        reservation: true
+        reservation: {
+          include: {
+            restaurant: true
+          }
+        }
       }
     });
 
@@ -162,12 +250,32 @@ export class PaymentService {
       throw new Error('Pre-order not found');
     }
 
-    // Calculate estimated prep time (sum of all item prep times)
-    const totalPrepTime = preOrder.items.reduce((total, item) => {
-      // This would normally come from the menu item data
-      const estimatedPrepTime = 10; // minutes per item as default
-      return total + (estimatedPrepTime * item.quantity);
-    }, 0);
+    // Check if kitchen ticket already exists
+    const existingTicket = await db.kitchenTicket.findUnique({
+      where: { reservationId: preOrder.reservationId }
+    });
+
+    if (existingTicket) {
+      // Kitchen ticket already exists, skip creation
+      return;
+    }
+
+    // Calculate estimated prep time from actual menu item prep times
+    let totalPrepTime = 0;
+    for (const item of preOrder.items) {
+      const menuItem = await db.menuItem.findUnique({
+        where: {
+          restaurantId_sku: {
+            restaurantId: preOrder.reservation.restaurantId,
+            sku: item.sku
+          }
+        },
+        select: { prepTimeMinutes: true }
+      });
+
+      const prepTime = menuItem?.prepTimeMinutes || 10; // Default to 10 minutes if not set
+      totalPrepTime += prepTime * item.quantity;
+    }
 
     // Create kitchen ticket
     await db.kitchenTicket.create({
@@ -230,17 +338,85 @@ export class PaymentService {
     // Handle the event
     switch (event.type) {
       case 'payment_intent.succeeded':
-        const paymentIntent = event.data.object;
-        await this.confirmPayment(paymentIntent.id);
+        const successIntent = event.data.object;
+        await this.confirmPayment(successIntent.id);
         break;
-      
+
       case 'payment_intent.payment_failed':
-        // Handle failed payment
-        console.log('Payment failed:', event.data.object);
+        const failedIntent = event.data.object;
+        await this.handleFailedPayment(failedIntent);
         break;
 
       default:
         console.log(`Unhandled event type ${event.type}`);
+    }
+  }
+
+  private async handleFailedPayment(paymentIntent: any): Promise<void> {
+    try {
+      const preOrderId = paymentIntent.metadata.preOrderId;
+
+      if (!preOrderId) {
+        console.error('Failed payment missing preOrderId:', paymentIntent.id);
+        return;
+      }
+
+      // Check if payment record exists
+      const existingPayment = await db.payment.findUnique({
+        where: { stripePaymentIntentId: paymentIntent.id }
+      });
+
+      if (existingPayment) {
+        // Update existing payment to FAILED
+        await db.payment.update({
+          where: { id: existingPayment.id },
+          data: { status: 'FAILED' }
+        });
+      } else {
+        // Create payment record with FAILED status
+        await db.payment.create({
+          data: {
+            preorderId: preOrderId,
+            stripePaymentIntentId: paymentIntent.id,
+            amount: paymentIntent.amount,
+            status: 'FAILED'
+          }
+        });
+      }
+
+      // Log event
+      const preOrder = await db.preOrder.findUnique({
+        where: { id: preOrderId },
+        include: { reservation: true }
+      });
+
+      if (preOrder) {
+        await db.event.create({
+          data: {
+            kind: 'payment_failed',
+            actorId: preOrder.reservation.userId,
+            restaurantId: preOrder.reservation.restaurantId,
+            reservationId: preOrder.reservationId,
+            payloadJson: {
+              paymentIntentId: paymentIntent.id,
+              amount: paymentIntent.amount,
+              preOrderId,
+              failureCode: paymentIntent.last_payment_error?.code,
+              failureMessage: paymentIntent.last_payment_error?.message
+            }
+          }
+        });
+      }
+
+      console.log('Payment failed:', {
+        paymentIntentId: paymentIntent.id,
+        preOrderId,
+        error: paymentIntent.last_payment_error
+      });
+
+    } catch (error) {
+      console.error('Error handling failed payment:', error);
+      // Don't throw - webhook should still return 200
     }
   }
 }
