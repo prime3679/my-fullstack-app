@@ -320,35 +320,85 @@ export class PaymentService {
     }
   }
 
-  async handleWebhook(body: any, signature: string): Promise<void> {
+  async handleWebhook(body: string | Buffer, signature: string): Promise<void> {
     // Stripe webhook handling for payment events
     let event;
 
+    // Validate webhook secret is configured
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.error('STRIPE_WEBHOOK_SECRET is not configured');
+      throw new Error('Webhook secret not configured');
+    }
+
     try {
+      // Verify webhook signature using Stripe
       event = stripe.webhooks.constructEvent(
         body,
         signature,
-        process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test_123...'
+        webhookSecret
       );
+
+      console.log('Webhook signature verified successfully', {
+        eventId: event.id,
+        eventType: event.type
+      });
+
     } catch (err) {
-      console.error('Webhook signature verification failed:', err);
+      console.error('Webhook signature verification failed:', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        signatureProvided: !!signature,
+        bodyType: typeof body
+      });
       throw new Error('Invalid webhook signature');
     }
 
-    // Handle the event
-    switch (event.type) {
-      case 'payment_intent.succeeded':
-        const successIntent = event.data.object;
-        await this.confirmPayment(successIntent.id);
-        break;
+    // Handle the event based on type
+    try {
+      switch (event.type) {
+        case 'payment_intent.succeeded':
+          const successIntent = event.data.object;
+          console.log('Processing payment_intent.succeeded', {
+            paymentIntentId: successIntent.id,
+            amount: successIntent.amount
+          });
+          await this.confirmPayment(successIntent.id);
+          break;
 
-      case 'payment_intent.payment_failed':
-        const failedIntent = event.data.object;
-        await this.handleFailedPayment(failedIntent);
-        break;
+        case 'payment_intent.payment_failed':
+          const failedIntent = event.data.object;
+          console.log('Processing payment_intent.payment_failed', {
+            paymentIntentId: failedIntent.id,
+            failureCode: failedIntent.last_payment_error?.code
+          });
+          await this.handleFailedPayment(failedIntent);
+          break;
 
-      default:
-        console.log(`Unhandled event type ${event.type}`);
+        case 'payment_intent.canceled':
+          const canceledIntent = event.data.object;
+          console.log('Processing payment_intent.canceled', {
+            paymentIntentId: canceledIntent.id
+          });
+          // Could add specific handling for cancellations if needed
+          break;
+
+        default:
+          console.log(`Unhandled webhook event type: ${event.type}`);
+      }
+
+      console.log('Webhook event processed successfully', {
+        eventId: event.id,
+        eventType: event.type
+      });
+
+    } catch (processingError) {
+      console.error('Error processing webhook event:', {
+        eventId: event.id,
+        eventType: event.type,
+        error: processingError instanceof Error ? processingError.message : 'Unknown error'
+      });
+      // Re-throw so Stripe knows to retry
+      throw processingError;
     }
   }
 
