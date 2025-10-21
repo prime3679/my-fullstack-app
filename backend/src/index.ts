@@ -15,6 +15,7 @@ import { paymentRoutes } from './routes/payments';
 import { posRoutes } from './routes/pos';
 import { analyticsRoutes } from './routes/analytics';
 import { WebSocketManager, websocketManager } from './lib/websocketManager';
+import { websocketService } from './services/websocketService';
 import { requestLoggingPlugin } from './lib/middleware';
 import { SocialAuthService } from './lib/socialAuth';
 import { emailService } from './lib/emailService';
@@ -67,9 +68,13 @@ async function start() {
     // Initialize WebSocket manager
     const wsManager = new WebSocketManager(fastify);
     await wsManager.initialize();
-    
+
+    // Initialize kitchen WebSocket service
+    websocketService.init(fastify);
+
     // Export websocket manager for use in other modules
     globalThis.websocketManager = wsManager;
+    globalThis.websocketService = websocketService;
 
     // Health check endpoint
     fastify.get('/api/health', async (request, reply) => {
