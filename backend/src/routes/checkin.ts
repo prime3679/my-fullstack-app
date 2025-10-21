@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../lib/db';
 import type { PreOrderItem } from '@prisma/client';
+import QRCode from 'qrcode';
 
 export async function checkinRoutes(fastify: FastifyInstance) {
   
@@ -266,24 +267,30 @@ export async function checkinRoutes(fastify: FastifyInstance) {
 
       // QR code contains check-in URL and reservation data
       const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      const qrData = {
-        url: `${baseUrl}/checkin/${reservationId}`,
-        reservationId,
-        restaurantName: reservation.restaurant.name,
-        guestName: reservation.user?.name || '',
-        reservationTime: reservation.startAt
-      };
+      const checkInUrl = `${baseUrl}/checkin/${reservationId}`;
+
+      // Generate QR code as data URL
+      const qrCodeDataUrl = await QRCode.toDataURL(checkInUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
+      });
 
       return {
         success: true,
         data: {
-          qrData: JSON.stringify(qrData),
-          qrUrl: qrData.url,
+          qrCodeDataUrl,
+          checkInUrl,
           reservation: {
             id: reservation.id,
             status: reservation.status,
             restaurant: reservation.restaurant,
-            user: reservation.user
+            user: reservation.user,
+            startAt: reservation.startAt,
+            partySize: reservation.partySize,
           }
         }
       };

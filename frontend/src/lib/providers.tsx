@@ -3,9 +3,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { AuthProvider } from '../contexts/AuthContext';
+import { CartProvider } from '../contexts/CartContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => 
+  const [queryClient] = useState(() =>
     new QueryClient({
       defaultOptions: {
         queries: {
@@ -19,7 +20,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {children}
+        <CartProvider>
+          {children}
+        </CartProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
