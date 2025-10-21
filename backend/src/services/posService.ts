@@ -160,7 +160,14 @@ export class POSService {
           tokenExpiresAt: config.toastTokenExpiresAt,
         };
 
-        return createToastClient(toastConfig);
+        return createToastClient(toastConfig, async (tokens) => {
+          await this.updatePOSConfig(restaurantId, {
+            provider: 'toast',
+            toastAccessToken: tokens.accessToken,
+            toastRefreshToken: tokens.refreshToken,
+            toastTokenExpiresAt: tokens.tokenExpiresAt,
+          });
+        });
       } else if (config.provider === 'square') {
         if (!config.squareLocationId || !config.squareAccessToken) {
           throw new Error('Missing Square configuration');

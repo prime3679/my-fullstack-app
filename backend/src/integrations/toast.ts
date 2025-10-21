@@ -83,12 +83,23 @@ export interface ToastOrder {
 /**
  * Toast POS API Client
  */
+type ToastTokenUpdate = {
+  accessToken: string;
+  refreshToken?: string;
+  tokenExpiresAt: Date;
+};
+
 export class ToastClient {
   private config: ToastConfig;
   private axiosInstance: AxiosInstance;
+  private onTokenUpdated?: (tokens: ToastTokenUpdate) => Promise<void> | void;
 
-  constructor(config: ToastConfig) {
+  constructor(
+    config: ToastConfig,
+    onTokenUpdated?: (tokens: ToastTokenUpdate) => Promise<void> | void
+  ) {
     this.config = config;
+    this.onTokenUpdated = onTokenUpdated;
     this.axiosInstance = axios.create({
       baseURL: TOAST_API_BASE_URL,
       headers: {
@@ -123,6 +134,21 @@ export class ToastClient {
       Logger.info('Toast access token refreshed successfully', {
         expiresAt: this.config.tokenExpiresAt,
       });
+
+      if (this.onTokenUpdated && this.config.accessToken && this.config.tokenExpiresAt) {
+        try {
+          await this.onTokenUpdated({
+            accessToken: this.config.accessToken,
+            refreshToken: this.config.refreshToken,
+            tokenExpiresAt: this.config.tokenExpiresAt,
+          });
+        } catch (persistError) {
+          Logger.error('Failed to persist refreshed Toast tokens', {
+            error: formatError(persistError),
+          });
+          throw persistError;
+        }
+      }
     } catch (error) {
       Logger.error('Failed to refresh Toast access token', {
         error: formatError(error),
@@ -320,6 +346,9 @@ export class ToastClient {
 /**
  * Create Toast client instance
  */
-export function createToastClient(config: ToastConfig): ToastClient {
-  return new ToastClient(config);
+export function createToastClient(
+  config: ToastConfig,
+  onTokenUpdated?: (tokens: ToastTokenUpdate) => Promise<void> | void
+): ToastClient {
+  return new ToastClient(config, onTokenUpdated);
 }
