@@ -158,6 +158,11 @@ export const api = {
       method: 'DELETE',
     });
   },
+
+  // Payment endpoints
+  async getPaymentStatus(preOrderId: string): Promise<ApiResponse<any>> {
+    return apiRequest(`/payments/status/${preOrderId}`);
+  },
 };
 
 export { ApiError };
