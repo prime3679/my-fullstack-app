@@ -12,10 +12,12 @@ import { checkinRoutes } from './routes/checkin';
 import { authRoutes } from './routes/auth';
 import { staffRoutes } from './routes/staff';
 import { paymentRoutes } from './routes/payments';
+import { posRoutes } from './routes/pos';
 import { WebSocketManager, websocketManager } from './lib/websocketManager';
 import { requestLoggingPlugin } from './lib/middleware';
 import { SocialAuthService } from './lib/socialAuth';
 import { emailService } from './lib/emailService';
+import { menuSyncJob } from './jobs/menuSyncJob';
 import Logger from './lib/logger';
 import dotenv from 'dotenv';
 
@@ -58,6 +60,7 @@ async function start() {
     await fastify.register(kitchenRoutes, { prefix: '/api/v1/kitchen' });
     await fastify.register(checkinRoutes, { prefix: '/api/v1/checkin' });
     await fastify.register(paymentRoutes, { prefix: '/api/v1/payments' });
+    await fastify.register(posRoutes, { prefix: '/api/v1/pos' });
 
     // Initialize WebSocket manager
     const wsManager = new WebSocketManager(fastify);
@@ -163,6 +166,12 @@ async function start() {
       environment: process.env.NODE_ENV || 'development',
       action: 'SERVER_STARTED'
     });
+
+    // Start background jobs
+    menuSyncJob.start();
+    Logger.info('Background jobs started', {
+      menuSyncJob: menuSyncJob.getStatus(),
+    });
   } catch (error) {
     Logger.error('Failed to start server', {
       error: {
@@ -179,6 +188,11 @@ async function start() {
 const gracefulShutdown = async () => {
   try {
     Logger.info('Shutting down server gracefully', { action: 'SERVER_SHUTDOWN_INITIATED' });
+
+    // Stop background jobs
+    menuSyncJob.stop();
+    Logger.info('Background jobs stopped');
+
     await db.$disconnect();
     await fastify.close();
     Logger.info('Server shut down successfully', { action: 'SERVER_SHUTDOWN_COMPLETED' });
