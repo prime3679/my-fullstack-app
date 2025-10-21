@@ -200,13 +200,19 @@ describe('Payment API Integration Tests', () => {
       expect(body.data.totalPaid).toBe(0);
     });
 
-    it('should fail with non-existent preOrderId', async () => {
+    it('should return empty status for non-existent preOrderId', async () => {
       const response = await server.inject({
         method: 'GET',
         url: '/api/v1/payments/status/non-existent-id'
       });
 
-      expect(response.statusCode).toBe(500);
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.success).toBe(true);
+      expect(body.data.preOrderId).toBe('non-existent-id');
+      expect(body.data.hasPaidPayment).toBe(false);
+      expect(body.data.latestPayment).toBeNull();
+      expect(body.data.totalPaid).toBe(0);
     });
   });
 
