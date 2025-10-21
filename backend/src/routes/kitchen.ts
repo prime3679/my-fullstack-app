@@ -1,5 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../lib/db';
+import { posService } from '../services/posService';
+import { Logger } from '../lib/logger';
+import { formatError } from '../utils/errorFormat';
 
 export async function kitchenRoutes(fastify: FastifyInstance) {
   
@@ -109,6 +112,40 @@ export async function kitchenRoutes(fastify: FastifyInstance) {
           }
         }
       });
+
+      // Inject order to POS when ticket is fired
+      if (status === 'FIRED' && ticket.reservation.preOrder) {
+        try {
+          Logger.info('Injecting order to POS on ticket fire', {
+            ticketId,
+            preOrderId: ticket.reservation.preOrder.id,
+            restaurantId: ticket.reservation.restaurantId,
+          });
+
+          const posResponse = await posService.injectOrder(ticket.reservation.preOrder.id);
+
+          if (posResponse.success) {
+            Logger.info('Order successfully injected to POS', {
+              ticketId,
+              preOrderId: ticket.reservation.preOrder.id,
+              posOrderId: posResponse.posOrderId,
+            });
+          } else {
+            Logger.error('Failed to inject order to POS', {
+              ticketId,
+              preOrderId: ticket.reservation.preOrder.id,
+              error: { name: 'POSError', message: posResponse.error || 'Unknown error' },
+            });
+            // Don't fail the ticket update - POS injection can be retried
+          }
+        } catch (error) {
+          Logger.error('Error during POS order injection', {
+            ticketId,
+            error: formatError(error),
+          });
+          // Don't fail the ticket update - continue with ticket status change
+        }
+      }
 
       // Emit real-time update
       const wsManager = (global as any).websocketManager;
@@ -224,8 +261,8 @@ export async function kitchenRoutes(fastify: FastifyInstance) {
       });
 
       // Calculate actual average prep time from completed tickets
-      const avgPrepTime = completedTickets.length > 0 
-        ? completedTickets.reduce((sum, ticket) => {
+      const avgPrepTime = completedTickets.length > 0
+        ? completedTickets.reduce((sum: number, ticket: any) => {
             if (ticket.firedAt && ticket.readyAt) {
               const actualMinutes = Math.round((ticket.readyAt.getTime() - ticket.firedAt.getTime()) / (1000 * 60));
               return sum + actualMinutes;
