@@ -99,7 +99,35 @@ export default function DashboardPage({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Restaurant Analytics</h1>
-            <div className="flex gap-2">
+            <div className="flex gap-4">
+              {/* Export Buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    window.open(
+                      `http://localhost:3001/api/v1/analytics/export/revenue-csv/${restaurantId}`,
+                      '_blank'
+                    );
+                  }}
+                  className="px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+                >
+                  📊 Export CSV
+                </button>
+                <button
+                  onClick={() => {
+                    window.open(
+                      `http://localhost:3001/api/v1/analytics/export/dashboard-pdf/${restaurantId}`,
+                      '_blank'
+                    );
+                  }}
+                  className="px-3 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+                >
+                  📄 Export PDF
+                </button>
+              </div>
+
+              {/* Date Range Selector */}
+              <div className="flex gap-2">
               <button
                 onClick={() => setSelectedRange('7d')}
                 className={`px-4 py-2 rounded text-sm font-medium ${
