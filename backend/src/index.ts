@@ -14,6 +14,8 @@ import { staffRoutes } from './routes/staff';
 import { paymentRoutes } from './routes/payments';
 import { posRoutes } from './routes/pos';
 import { hostRoutes } from './routes/host';
+import { menuAdminRoutes } from './routes/menuAdmin';
+import { adminRoutes } from './routes/admin';
 import { WebSocketManager, websocketManager } from './lib/websocketManager';
 import { requestLoggingPlugin } from './lib/middleware';
 import { SocialAuthService } from './lib/socialAuth';
@@ -63,6 +65,8 @@ async function start() {
     await fastify.register(paymentRoutes, { prefix: '/api/v1/payments' });
     await fastify.register(posRoutes, { prefix: '/api/v1/pos' });
     await fastify.register(hostRoutes, { prefix: '/api/v1/host' });
+    await fastify.register(menuAdminRoutes, { prefix: '/api/v1/admin/menu' });
+    await fastify.register(adminRoutes, { prefix: '/api/v1/admin' });
 
     // Initialize WebSocket manager
     const wsManager = new WebSocketManager(fastify);
