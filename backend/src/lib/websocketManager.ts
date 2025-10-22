@@ -34,7 +34,7 @@ export class WebSocketManager {
       fastify.get('/ws/kitchen/:restaurantId', { websocket: true }, (connection, req) => {
         const restaurantId = (req.params as any).restaurantId as string;
         const clientId = `kitchen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
+
         console.log(`Kitchen client connected: ${clientId} for restaurant ${restaurantId}`);
 
         // Store client connection
@@ -44,7 +44,7 @@ export class WebSocketManager {
           clientId,
           connectedAt: new Date()
         };
-        
+
         self.clients.set(clientId, client);
 
         // Handle client messages
@@ -60,6 +60,48 @@ export class WebSocketManager {
         // Handle disconnection
         connection.on('close', () => {
           console.log(`Kitchen client disconnected: ${clientId}`);
+          self.clients.delete(clientId);
+        });
+
+        // Send initial connection confirmation
+        self.sendToClient(clientId, {
+          type: 'connected',
+          clientId,
+          restaurantId,
+          timestamp: new Date().toISOString()
+        });
+      });
+
+      // Host dashboard WebSocket endpoint
+      fastify.get('/ws/host/:restaurantId', { websocket: true }, (connection, req) => {
+        const restaurantId = (req.params as any).restaurantId as string;
+        const clientId = `host_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        console.log(`Host client connected: ${clientId} for restaurant ${restaurantId}`);
+
+        // Store client connection
+        const client: KitchenClient = {
+          websocket: connection as SocketStream,
+          restaurantId,
+          clientId,
+          connectedAt: new Date()
+        };
+
+        self.clients.set(clientId, client);
+
+        // Handle client messages
+        connection.on('message', (message: Buffer) => {
+          try {
+            const data: ClientMessage = JSON.parse(message.toString());
+            self.handleClientMessage(clientId, data);
+          } catch (error) {
+            console.error('Invalid WebSocket message:', error);
+          }
+        });
+
+        // Handle disconnection
+        connection.on('close', () => {
+          console.log(`Host client disconnected: ${clientId}`);
           self.clients.delete(clientId);
         });
 
@@ -185,6 +227,24 @@ export class WebSocketManager {
       timestamp: new Date().toISOString(),
       priority: 'high',
       sound: 'emergency_alert'
+    });
+  }
+
+  // Reservation update notification (for host dashboard)
+  notifyReservationUpdate(restaurantId: string, data: any): number {
+    return this.broadcastToRestaurant(restaurantId, {
+      type: 'reservation_update',
+      data,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // New reservation created (for host dashboard)
+  notifyNewReservation(restaurantId: string, reservation: any): number {
+    return this.broadcastToRestaurant(restaurantId, {
+      type: 'new_reservation',
+      reservation,
+      timestamp: new Date().toISOString()
     });
   }
 
