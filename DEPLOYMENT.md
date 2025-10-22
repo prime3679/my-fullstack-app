@@ -12,6 +12,49 @@ This guide walks you through deploying La Carta to production using:
 - Credit card for service signups (all have free tiers)
 - Domain name (optional, services provide subdomains)
 
+## GitHub Actions Setup (Optional but Recommended)
+
+La Carta includes a GitHub Actions workflow that automatically creates preview databases for each pull request using Neon branching.
+
+### Benefits:
+- Each PR gets its own isolated database
+- Migrations run automatically on PR creation
+- Schema changes are posted as PR comments
+- Branches auto-delete when PR is closed
+- Free for up to 10 concurrent branches
+
+### Setup:
+
+1. **Get Neon API Key**:
+   - Go to https://console.neon.tech
+   - Navigate to "Account Settings" → "API Keys"
+   - Click "Generate new API key"
+   - Copy the key (starts with `neon_api_...`)
+
+2. **Get Neon Project ID**:
+   - In Neon console, go to your project
+   - Click "Project settings"
+   - Copy the "Project ID" (starts with `ep-...` or similar)
+
+3. **Add GitHub Secrets**:
+   - Go to your GitHub repo → Settings → Secrets and variables → Actions
+   - Click "New repository secret"
+   - Add `NEON_API_KEY` with your API key from step 1
+
+4. **Add GitHub Variables**:
+   - In the same page, go to "Variables" tab
+   - Click "New repository variable"
+   - Add `NEON_PROJECT_ID` with your project ID from step 2
+
+5. **Test the Workflow**:
+   - Create a test pull request
+   - Watch the Actions tab - it should create a Neon branch
+   - Check PR comments for database URL and schema diff
+
+**Workflow file**: `.github/workflows/neon-branch.yml` is already configured in your repo.
+
+---
+
 ## Part 1: Database Setup (Neon PostgreSQL)
 
 ### 1.1 Create Neon Account
