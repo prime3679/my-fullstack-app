@@ -13,7 +13,7 @@ import { authRoutes } from './routes/auth';
 import { staffRoutes } from './routes/staff';
 import { paymentRoutes } from './routes/payments';
 import { posRoutes } from './routes/pos';
-import { hostRoutes } from './routes/host';
+// import { hostRoutes } from './routes/host'; // Temporarily disabled - schema mismatch
 import { menuAdminRoutes } from './routes/menuAdmin';
 import { adminRoutes } from './routes/admin';
 import { WebSocketManager, websocketManager } from './lib/websocketManager';
@@ -64,7 +64,7 @@ async function start() {
     await fastify.register(checkinRoutes, { prefix: '/api/v1/checkin' });
     await fastify.register(paymentRoutes, { prefix: '/api/v1/payments' });
     await fastify.register(posRoutes, { prefix: '/api/v1/pos' });
-    await fastify.register(hostRoutes, { prefix: '/api/v1/host' });
+    // await fastify.register(hostRoutes, { prefix: '/api/v1/host' }); // Temporarily disabled - schema mismatch
     await fastify.register(menuAdminRoutes, { prefix: '/api/v1/admin/menu' });
     await fastify.register(adminRoutes, { prefix: '/api/v1/admin' });
 
