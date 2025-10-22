@@ -5,7 +5,7 @@
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { posService } from '../services/posService';
-import { Logger } from '../lib/logger';
+import { Logger, toLogError } from '../lib/logger';
 import { formatError } from '../utils/errorFormat';
 import { POSConfiguration, POSProvider } from '../types/pos';
 

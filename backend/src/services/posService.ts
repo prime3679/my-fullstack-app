@@ -5,7 +5,7 @@
  */
 
 import { db } from '../lib/db';
-import { Logger } from '../lib/logger';
+import { Logger, toLogError } from '../lib/logger';
 import { formatError } from '../utils/errorFormat';
 import { createToastClient, ToastClient, ToastConfig } from '../integrations/toast';
 import { createSquareClient, SquareClient, SquareConfig } from '../integrations/square';

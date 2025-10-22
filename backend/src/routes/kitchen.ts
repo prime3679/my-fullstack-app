@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../lib/db';
 import { posService } from '../services/posService';
-import { Logger } from '../lib/logger';
+import { Logger, toLogError } from '../lib/logger';
 import { formatError } from '../utils/errorFormat';
 
 export async function kitchenRoutes(fastify: FastifyInstance) {

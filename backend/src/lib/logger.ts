@@ -35,6 +35,24 @@ const logger = pino({
   }
 });
 
+/**
+ * Convert unknown error to LogContext error format
+ */
+export function toLogError(error: unknown): { name: string; message: string; stack?: string; code?: string } {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: (error as any).code
+    };
+  }
+  return {
+    name: 'UnknownError',
+    message: String(error)
+  };
+}
+
 export class Logger {
   static info(message: string, context?: LogContext) {
     logger.info(context, message);

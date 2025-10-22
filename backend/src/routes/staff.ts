@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/db';
-import { Logger } from '../lib/logger';
+import { Logger, toLogError } from '../lib/logger';
 import { emailService } from '../lib/emailService';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';

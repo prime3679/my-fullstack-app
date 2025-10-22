@@ -1,5 +1,5 @@
 import { db } from '../lib/db';
-import { Logger } from '../lib/logger';
+import { Logger, toLogError } from '../lib/logger';
 import { UserRole } from '@prisma/client';
 
 // ==================== INTERFACES ====================

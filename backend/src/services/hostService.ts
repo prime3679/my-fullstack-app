@@ -1,6 +1,6 @@
 import { db } from '../lib/db';
 import { ReservationStatus } from '@prisma/client';
-import { Logger } from '../lib/logger';
+import { Logger, toLogError } from '../lib/logger';
 
 export interface UpdateTableAssignmentInput {
   reservationId: string;
