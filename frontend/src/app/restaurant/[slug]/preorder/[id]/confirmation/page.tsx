@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../../../lib/api';
 import Link from 'next/link';
-import QRCode from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 export default function PreOrderConfirmationPage() {
   const params = useParams();
@@ -274,7 +274,7 @@ export default function PreOrderConfirmationPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Check-In QR Code</h3>
               <div className="flex justify-center mb-4">
                 <div className="bg-white p-4 rounded-lg border-4 border-amber-600">
-                  <QRCode value={checkinUrl} size={200} />
+                  <QRCodeCanvas value={checkinUrl} size={200} />
                 </div>
               </div>
               <p className="text-sm text-gray-600 text-center mb-4">
