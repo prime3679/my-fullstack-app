@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
 import { ReservationCard } from '../../../components/host/ReservationCard';
 import { TableSelector } from '../../../components/host/TableSelector';
 
@@ -75,8 +75,12 @@ interface Table {
   };
 }
 
-export default function HostDashboard({ params }: { params: Promise<{ restaurantId: string }> }) {
-  const { restaurantId } = use(params);
+export default function HostDashboard({
+  params: routeParams,
+}: {
+  params: { restaurantId: string };
+}) {
+  const { restaurantId } = routeParams;
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [tables, setTables] = useState<Table[]>([]);

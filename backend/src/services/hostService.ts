@@ -177,12 +177,21 @@ export class HostService {
         select: {
           id: true,
           restaurantId: true,
-          partySize: true
+          partySize: true,
+          startAt: true,
+          status: true
         }
       });
 
       if (!reservation) {
         throw new Error('Reservation not found');
+      }
+
+      if (
+        reservation.status !== ReservationStatus.BOOKED &&
+        reservation.status !== ReservationStatus.CHECKED_IN
+      ) {
+        throw new Error('Only active reservations can be assigned a table');
       }
 
       // Verify table belongs to same restaurant
@@ -197,6 +206,34 @@ export class HostService {
           partySize: reservation.partySize,
           reservationId
         });
+      }
+
+      // Ensure table is not already assigned to an overlapping reservation
+      const conflictWindowStart = new Date(reservation.startAt);
+      conflictWindowStart.setMinutes(conflictWindowStart.getMinutes() - 90);
+      const conflictWindowEnd = new Date(reservation.startAt);
+      conflictWindowEnd.setMinutes(conflictWindowEnd.getMinutes() + 90);
+
+      const conflictingReservation = await db.reservation.findFirst({
+        where: {
+          id: { not: reservationId },
+          tableId,
+          startAt: {
+            gte: conflictWindowStart,
+            lte: conflictWindowEnd
+          },
+          status: {
+            in: [ReservationStatus.BOOKED, ReservationStatus.CHECKED_IN]
+          }
+        },
+        select: {
+          id: true,
+          startAt: true
+        }
+      });
+
+      if (conflictingReservation) {
+        throw new Error('Table is already assigned to another reservation during this time');
       }
 
       // Update reservation with table assignment
