@@ -131,7 +131,7 @@ export class MenuAdminService {
 
       return items;
     } catch (error) {
-      Logger.error('Error fetching menu items', { restaurantId, error });
+      Logger.error('Error fetching menu items', { restaurantId, error: error as Error });
       throw error;
     }
   }
@@ -166,7 +166,7 @@ export class MenuAdminService {
 
       return item;
     } catch (error) {
-      Logger.error('Error fetching menu item', { itemId, error });
+      Logger.error('Error fetching menu item', { itemId, error: error as Error });
       throw error;
     }
   }
@@ -221,7 +221,7 @@ export class MenuAdminService {
 
       return this.getMenuItemById(menuItem.id);
     } catch (error) {
-      Logger.error('Error creating menu item', { input, error });
+      Logger.error('Error creating menu item', { input, error: error as Error });
       throw error;
     }
   }
@@ -254,7 +254,7 @@ export class MenuAdminService {
 
       return item;
     } catch (error) {
-      Logger.error('Error updating menu item', { itemId, input, error });
+      Logger.error('Error updating menu item', { itemId, input, error: error as Error });
       throw error;
     }
   }
@@ -272,7 +272,7 @@ export class MenuAdminService {
 
       return { success: true };
     } catch (error) {
-      Logger.error('Error deleting menu item', { itemId, error });
+      Logger.error('Error deleting menu item', { itemId, error: error as Error });
       throw error;
     }
   }
@@ -304,7 +304,7 @@ export class MenuAdminService {
 
       return this.getMenuItemById(itemId);
     } catch (error) {
-      Logger.error('Error attaching modifier groups', { itemId, modifierGroupIds, error });
+      Logger.error('Error attaching modifier groups', { itemId, modifierGroupIds, error: error as Error });
       throw error;
     }
   }
@@ -334,7 +334,7 @@ export class MenuAdminService {
 
       return categories;
     } catch (error) {
-      Logger.error('Error fetching categories', { restaurantId, error });
+      Logger.error('Error fetching categories', { restaurantId, error: error as Error });
       throw error;
     }
   }
@@ -355,7 +355,7 @@ export class MenuAdminService {
 
       return category;
     } catch (error) {
-      Logger.error('Error creating category', { input, error });
+      Logger.error('Error creating category', { input, error: error as Error });
       throw error;
     }
   }
@@ -374,7 +374,7 @@ export class MenuAdminService {
 
       return category;
     } catch (error) {
-      Logger.error('Error updating category', { categoryId, input, error });
+      Logger.error('Error updating category', { categoryId, input, error: error as Error });
       throw error;
     }
   }
@@ -401,7 +401,7 @@ export class MenuAdminService {
 
       return { success: true };
     } catch (error) {
-      Logger.error('Error deleting category', { categoryId, error });
+      Logger.error('Error deleting category', { categoryId, error: error as Error });
       throw error;
     }
   }
@@ -424,7 +424,7 @@ export class MenuAdminService {
 
       return this.getAllCategories(restaurantId);
     } catch (error) {
-      Logger.error('Error reordering categories', { restaurantId, categoryIds, error });
+      Logger.error('Error reordering categories', { restaurantId, categoryIds, error: error as Error });
       throw error;
     }
   }
@@ -451,7 +451,7 @@ export class MenuAdminService {
 
       return groups;
     } catch (error) {
-      Logger.error('Error fetching modifier groups', { restaurantId, error });
+      Logger.error('Error fetching modifier groups', { restaurantId, error: error as Error });
       throw error;
     }
   }
@@ -476,7 +476,7 @@ export class MenuAdminService {
 
       return group;
     } catch (error) {
-      Logger.error('Error fetching modifier group', { groupId, error });
+      Logger.error('Error fetching modifier group', { groupId, error: error as Error });
       throw error;
     }
   }
@@ -502,7 +502,7 @@ export class MenuAdminService {
 
       return group;
     } catch (error) {
-      Logger.error('Error creating modifier group', { input, error });
+      Logger.error('Error creating modifier group', { input, error: error as Error });
       throw error;
     }
   }
@@ -526,7 +526,7 @@ export class MenuAdminService {
 
       return group;
     } catch (error) {
-      Logger.error('Error updating modifier group', { groupId, input, error });
+      Logger.error('Error updating modifier group', { groupId, input, error: error as Error });
       throw error;
     }
   }
@@ -544,7 +544,7 @@ export class MenuAdminService {
 
       return { success: true };
     } catch (error) {
-      Logger.error('Error deleting modifier group', { groupId, error });
+      Logger.error('Error deleting modifier group', { groupId, error: error as Error });
       throw error;
     }
   }
@@ -568,7 +568,7 @@ export class MenuAdminService {
 
       return modifier;
     } catch (error) {
-      Logger.error('Error creating modifier', { input, error });
+      Logger.error('Error creating modifier', { input, error: error as Error });
       throw error;
     }
   }
@@ -587,7 +587,7 @@ export class MenuAdminService {
 
       return modifier;
     } catch (error) {
-      Logger.error('Error updating modifier', { modifierId, input, error });
+      Logger.error('Error updating modifier', { modifierId, input, error: error as Error });
       throw error;
     }
   }
@@ -605,7 +605,7 @@ export class MenuAdminService {
 
       return { success: true };
     } catch (error) {
-      Logger.error('Error deleting modifier', { modifierId, error });
+      Logger.error('Error deleting modifier', { modifierId, error: error as Error });
       throw error;
     }
   }
@@ -628,7 +628,7 @@ export class MenuAdminService {
 
       return this.getModifierGroupById(groupId);
     } catch (error) {
-      Logger.error('Error reordering modifiers', { groupId, modifierIds, error });
+      Logger.error('Error reordering modifiers', { groupId, modifierIds, error: error as Error });
       throw error;
     }
   }

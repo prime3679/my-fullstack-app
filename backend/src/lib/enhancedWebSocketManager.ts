@@ -281,7 +281,7 @@ export class EnhancedWebSocketManager extends EventEmitter {
     this.updateClientState(clientId, ConnectionState.RECONNECTING);
     
     // Emit error event
-    this.emit('client:error', { clientId, error });
+    this.emit('client:error', { clientId, error: error as Error });
   }
 
   private scheduleReconnection(clientId: string) {
@@ -557,7 +557,7 @@ export class EnhancedWebSocketManager extends EventEmitter {
     this.sendRawMessage(clientId, {
       id: this.generateMessageId(),
       type: MessageType.ERROR,
-      data: { error },
+      data: { error: error as unknown as Error },
       timestamp: Date.now()
     });
   }

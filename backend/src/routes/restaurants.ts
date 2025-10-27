@@ -88,8 +88,8 @@ export async function restaurantRoutes(fastify: FastifyInstance) {
       }
 
       // Calculate total capacity
-      const totalCapacity = restaurant.locations.reduce((total, location) => {
-        return total + location.tables.reduce((locationTotal, table) => {
+      const totalCapacity = restaurant.locations.reduce((total: any, location: any) => {
+        return total + location.tables.reduce((locationTotal: any, table: any) => {
           return locationTotal + table.seats;
         }, 0);
       }, 0);
@@ -98,7 +98,7 @@ export async function restaurantRoutes(fastify: FastifyInstance) {
         ...restaurant,
         capacity: {
           totalSeats: totalCapacity,
-          tableCount: restaurant.locations.reduce((total, loc) => total + loc.tables.length, 0)
+          tableCount: restaurant.locations.reduce((total: any, loc: any) => total + loc.tables.length, 0)
         }
       };
 

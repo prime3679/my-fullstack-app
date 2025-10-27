@@ -3,7 +3,7 @@ import { db } from '../lib/db';
 
 // Initialize Stripe with test keys for development
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51234...', {
-  apiVersion: '2024-11-20.acacia'
+  apiVersion: '2024-11-20' as any  // Type assertion for API version compatibility
 });
 
 export class PaymentService {
@@ -154,7 +154,7 @@ export class PaymentService {
       const tipAmount = paymentIntent.amount - currentPreOrder.total;
 
       // Create payment record and update pre-order in a transaction
-      const result = await db.$transaction(async (tx) => {
+      const result = await db.$transaction(async (tx: any) => {
         // Create payment record
         await tx.payment.create({
           data: {
@@ -284,7 +284,7 @@ export class PaymentService {
         status: 'PENDING',
         estimatedPrepMinutes: totalPrepTime,
         fireAt: preOrder.reservation.startAt,
-        itemsJson: preOrder.items.map(item => ({
+        itemsJson: preOrder.items.map((item: any) => ({
           name: item.name,
           quantity: item.quantity,
           modifiers: item.modifiersJson,

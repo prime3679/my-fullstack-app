@@ -1,5 +1,5 @@
 import { db } from '../lib/db';
-import { ReservationStatus } from '@prisma/client';
+import { ReservationStatus } from '../types/prisma-enums';
 import { Logger } from '../lib/logger';
 
 export interface UpdateTableAssignmentInput {
@@ -129,12 +129,12 @@ export class HostService {
       // Calculate summary stats
       const summary = {
         totalReservations: reservations.length,
-        totalCovers: reservations.reduce((sum, r) => sum + r.partySize, 0),
-        withPreOrders: reservations.filter(r => r.preOrder).length,
-        checkedIn: reservations.filter(r => r.checkin).length,
-        seated: reservations.filter(r => r.status === ReservationStatus.CHECKED_IN).length,
-        completed: reservations.filter(r => r.status === ReservationStatus.COMPLETED).length,
-        noShows: reservations.filter(r => r.status === ReservationStatus.NO_SHOW).length
+        totalCovers: reservations.reduce((sum: any, r: any) => sum + r.partySize, 0),
+        withPreOrders: reservations.filter((r: any) => r.preOrder).length,
+        checkedIn: reservations.filter((r: any) => r.checkin).length,
+        seated: reservations.filter((r: any) => r.status === ReservationStatus.CHECKED_IN).length,
+        completed: reservations.filter((r: any) => r.status === ReservationStatus.COMPLETED).length,
+        noShows: reservations.filter((r: any) => r.status === ReservationStatus.NO_SHOW).length
       };
 
       return {
@@ -143,7 +143,7 @@ export class HostService {
         date: startDate.toISOString().split('T')[0]
       };
     } catch (error) {
-      Logger.error('Error fetching today\'s reservations', { query, error });
+      Logger.error('Error fetching today\'s reservations', { query, error: error as Error });
       throw error;
     }
   }
@@ -249,7 +249,7 @@ export class HostService {
 
       return updatedReservation;
     } catch (error) {
-      Logger.error('Error assigning table', { input, error });
+      Logger.error('Error assigning table', { input, error: error as Error });
       throw error;
     }
   }
@@ -322,7 +322,7 @@ export class HostService {
 
       return updatedReservation;
     } catch (error) {
-      Logger.error('Error updating reservation status', { reservationId, status, error });
+      Logger.error('Error updating reservation status', { reservationId, status, error: error as Error });
       throw error;
     }
   }
@@ -344,8 +344,8 @@ export class HostService {
         }
       });
 
-      const allTables = locations.flatMap(location =>
-        location.tables.map(table => ({
+      const allTables = locations.flatMap((location: any) =>
+        location.tables.map((table: any) => ({
           ...table,
           locationId: location.id,
           locationName: location.name
@@ -354,7 +354,7 @@ export class HostService {
 
       if (!time) {
         // If no time specified, return all tables
-        return allTables.map(table => ({
+        return allTables.map((table: any) => ({
           ...table,
           isAvailable: true,
           assignedReservation: null
@@ -391,8 +391,8 @@ export class HostService {
       });
 
       // Map tables to availability
-      const tablesWithAvailability = allTables.map(table => {
-        const assignedReservation = reservationsAtTime.find(r => r.tableId === table.id);
+      const tablesWithAvailability = allTables.map((table: any) => {
+        const assignedReservation = reservationsAtTime.find((r: any) => r.tableId === table.id);
         return {
           ...table,
           isAvailable: !assignedReservation,
@@ -407,7 +407,7 @@ export class HostService {
 
       return tablesWithAvailability;
     } catch (error) {
-      Logger.error('Error fetching available tables', { restaurantId, time, error });
+      Logger.error('Error fetching available tables', { restaurantId, time, error: error as Error });
       throw error;
     }
   }

@@ -1,5 +1,5 @@
 import { db } from '../lib/db';
-import { ReservationStatus } from '@prisma/client';
+import { ReservationStatus } from '../types/prisma-enums';
 
 export interface CreateReservationInput {
   restaurantId: string;
@@ -44,8 +44,8 @@ export class ReservationService {
     }
 
     // Calculate total capacity
-    const totalCapacity = restaurant.locations.reduce((total, location) => {
-      return total + location.tables.reduce((locationTotal, table) => {
+    const totalCapacity = restaurant.locations.reduce((total: any, location: any) => {
+      return total + location.tables.reduce((locationTotal: any, table: any) => {
         return locationTotal + (table.seats >= partySize ? 1 : 0);
       }, 0);
     }, 0);
@@ -75,7 +75,7 @@ export class ReservationService {
         slotTime.setHours(hour, minutes, 0, 0);
 
         // Count reservations at this exact time slot
-        const reservationsAtSlot = existingReservations.filter(res => 
+        const reservationsAtSlot = existingReservations.filter((res: any) => 
           res.startAt.getTime() === slotTime.getTime()
         ).length;
 

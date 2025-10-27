@@ -1,6 +1,6 @@
 import { db } from '../lib/db';
 import { Logger } from '../lib/logger';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '../types/prisma-enums';
 
 // ==================== INTERFACES ====================
 
@@ -95,7 +95,7 @@ export class StaffAdminService {
 
       return staff;
     } catch (error) {
-      Logger.error('Error fetching restaurant staff', { restaurantId, error });
+      Logger.error('Error fetching restaurant staff', { restaurantId, error: error as Error });
       throw error;
     }
   }
@@ -168,7 +168,7 @@ export class StaffAdminService {
 
       return newUser;
     } catch (error) {
-      Logger.error('Error inviting staff', { input, error });
+      Logger.error('Error inviting staff', { input, error: error as Error });
       throw error;
     }
   }
@@ -218,7 +218,7 @@ export class StaffAdminService {
 
       return updatedUser;
     } catch (error) {
-      Logger.error('Error updating staff role', { input, error });
+      Logger.error('Error updating staff role', { input, error: error as Error });
       throw error;
     }
   }
@@ -266,7 +266,7 @@ export class StaffAdminService {
 
       return { success: true };
     } catch (error) {
-      Logger.error('Error removing staff', { userId, restaurantId, error });
+      Logger.error('Error removing staff', { userId, restaurantId, error: error as Error });
       throw error;
     }
   }
@@ -310,7 +310,7 @@ export class StaffAdminService {
 
       return restaurant;
     } catch (error) {
-      Logger.error('Error fetching restaurant settings', { restaurantId, error });
+      Logger.error('Error fetching restaurant settings', { restaurantId, error: error as Error });
       throw error;
     }
   }
@@ -366,7 +366,7 @@ export class StaffAdminService {
 
       return updated;
     } catch (error) {
-      Logger.error('Error updating restaurant settings', { input, error });
+      Logger.error('Error updating restaurant settings', { input, error: error as Error });
       throw error;
     }
   }
@@ -411,7 +411,7 @@ export class StaffAdminService {
 
       return updated;
     } catch (error) {
-      Logger.error('Error updating restaurant info', { restaurantId, data, error });
+      Logger.error('Error updating restaurant info', { restaurantId, data, error: error as Error });
       throw error;
     }
   }

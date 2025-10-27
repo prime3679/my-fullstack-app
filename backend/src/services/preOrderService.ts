@@ -1,5 +1,5 @@
 import { db } from '../lib/db';
-import { PreOrderStatus } from '@prisma/client';
+import { PreOrderStatus } from '../types/prisma-enums';
 
 export interface CreatePreOrderItemInput {
   sku: string;
@@ -86,7 +86,7 @@ export class PreOrderService {
       // Calculate modifier prices and validate selections
       if (orderItem.modifiers) {
         for (const modSelection of orderItem.modifiers) {
-          const modifierGroup = menuItem.modifierGroups.find(mg =>
+          const modifierGroup = menuItem.modifierGroups.find((mg: any) =>
             mg.modifierGroup.id === modSelection.modifierGroupId
           );
 
@@ -94,7 +94,7 @@ export class PreOrderService {
             throw new Error(`Modifier group not found for menu item ${menuItem.name}`);
           }
 
-          const modifier = modifierGroup.modifierGroup.modifiers.find(m =>
+          const modifier = modifierGroup.modifierGroup.modifiers.find((m: any) =>
             m.id === modSelection.modifierId
           );
 
@@ -114,7 +114,7 @@ export class PreOrderService {
         }
 
         // Validate required modifier groups
-        const requiredGroups = menuItem.modifierGroups.filter(mg => mg.isRequired);
+        const requiredGroups = menuItem.modifierGroups.filter((mg: any) => mg.isRequired);
         for (const requiredGroup of requiredGroups) {
           const hasSelection = orderItem.modifiers.some(mod =>
             mod.modifierGroupId === requiredGroup.modifierGroup.id
@@ -180,7 +180,7 @@ export class PreOrderService {
     const calculation = await this.calculatePreOrder(reservation.restaurantId, input.items);
 
     // Create pre-order
-    const preOrder = await db.$transaction(async (tx) => {
+    const preOrder = await db.$transaction(async (tx: any) => {
       const createdPreOrder = await tx.preOrder.create({
         data: {
           reservationId: input.reservationId,

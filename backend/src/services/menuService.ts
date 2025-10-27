@@ -92,12 +92,12 @@ export class MenuService {
     });
 
     return {
-      categories: categories.map(category => ({
+      categories: categories.map((category: any) => ({
         id: category.id,
         name: category.name,
         description: category.description,
         sortOrder: category.sortOrder,
-        items: category.menuItems.map(item => ({
+        items: category.menuItems.map((item: any) => ({
           id: item.id,
           sku: item.sku,
           name: item.name,
@@ -115,7 +115,7 @@ export class MenuService {
             id: category.id,
             name: category.name
           },
-          modifierGroups: item.modifierGroups.map(mg => ({
+          modifierGroups: item.modifierGroups.map((mg: any) => ({
             id: mg.modifierGroup.id,
             name: mg.modifierGroup.name,
             description: mg.modifierGroup.description,
@@ -123,7 +123,7 @@ export class MenuService {
             maxSelections: mg.modifierGroup.maxSelections,
             isRequired: mg.isRequired,
             sortOrder: mg.sortOrder,
-            modifiers: mg.modifierGroup.modifiers.map(modifier => ({
+            modifiers: mg.modifierGroup.modifiers.map((modifier: any) => ({
               id: modifier.id,
               name: modifier.name,
               description: modifier.description,
@@ -193,7 +193,7 @@ export class MenuService {
       nutritionJson: item.nutritionJson,
       sortOrder: item.sortOrder,
       category: item.category,
-      modifierGroups: item.modifierGroups.map(mg => ({
+      modifierGroups: item.modifierGroups.map((mg: any) => ({
         id: mg.modifierGroup.id,
         name: mg.modifierGroup.name,
         description: mg.modifierGroup.description,
@@ -201,7 +201,7 @@ export class MenuService {
         maxSelections: mg.modifierGroup.maxSelections,
         isRequired: mg.isRequired,
         sortOrder: mg.sortOrder,
-        modifiers: mg.modifierGroup.modifiers.map(modifier => ({
+        modifiers: mg.modifierGroup.modifiers.map((modifier: any) => ({
           id: modifier.id,
           name: modifier.name,
           description: modifier.description,
@@ -279,7 +279,7 @@ export class MenuService {
       }
     });
 
-    return items.map(item => ({
+    return items.map((item: any) => ({
       id: item.id,
       sku: item.sku,
       name: item.name,
@@ -294,7 +294,7 @@ export class MenuService {
       nutritionJson: item.nutritionJson,
       sortOrder: item.sortOrder,
       category: item.category,
-      modifierGroups: item.modifierGroups.map(mg => ({
+      modifierGroups: item.modifierGroups.map((mg: any) => ({
         id: mg.modifierGroup.id,
         name: mg.modifierGroup.name,
         description: mg.modifierGroup.description,
@@ -302,7 +302,7 @@ export class MenuService {
         maxSelections: mg.modifierGroup.maxSelections,
         isRequired: mg.isRequired,
         sortOrder: mg.sortOrder,
-        modifiers: mg.modifierGroup.modifiers.map(modifier => ({
+        modifiers: mg.modifierGroup.modifiers.map((modifier: any) => ({
           id: modifier.id,
           name: modifier.name,
           description: modifier.description,
@@ -373,7 +373,7 @@ export class MenuService {
       nutritionJson: updated.nutritionJson,
       sortOrder: updated.sortOrder,
       category: updated.category,
-      modifierGroups: updated.modifierGroups.map(mg => ({
+      modifierGroups: updated.modifierGroups.map((mg: any) => ({
         id: mg.modifierGroup.id,
         name: mg.modifierGroup.name,
         description: mg.modifierGroup.description,
@@ -381,7 +381,7 @@ export class MenuService {
         maxSelections: mg.modifierGroup.maxSelections,
         isRequired: mg.isRequired,
         sortOrder: mg.sortOrder,
-        modifiers: mg.modifierGroup.modifiers.map(modifier => ({
+        modifiers: mg.modifierGroup.modifiers.map((modifier: any) => ({
           id: modifier.id,
           name: modifier.name,
           description: modifier.description,
@@ -462,7 +462,7 @@ export class MenuService {
       nutritionJson: updated.nutritionJson,
       sortOrder: updated.sortOrder,
       category: updated.category,
-      modifierGroups: updated.modifierGroups.map(mg => ({
+      modifierGroups: updated.modifierGroups.map((mg: any) => ({
         id: mg.modifierGroup.id,
         name: mg.modifierGroup.name,
         description: mg.modifierGroup.description,
@@ -470,7 +470,7 @@ export class MenuService {
         maxSelections: mg.modifierGroup.maxSelections,
         isRequired: mg.isRequired,
         sortOrder: mg.sortOrder,
-        modifiers: mg.modifierGroup.modifiers.map(modifier => ({
+        modifiers: mg.modifierGroup.modifiers.map((modifier: any) => ({
           id: modifier.id,
           name: modifier.name,
           description: modifier.description,
@@ -542,7 +542,7 @@ export class MenuService {
       nutritionJson: updated.nutritionJson,
       sortOrder: updated.sortOrder,
       category: updated.category,
-      modifierGroups: updated.modifierGroups.map(mg => ({
+      modifierGroups: updated.modifierGroups.map((mg: any) => ({
         id: mg.modifierGroup.id,
         name: mg.modifierGroup.name,
         description: mg.modifierGroup.description,
@@ -550,7 +550,7 @@ export class MenuService {
         maxSelections: mg.modifierGroup.maxSelections,
         isRequired: mg.isRequired,
         sortOrder: mg.sortOrder,
-        modifiers: mg.modifierGroup.modifiers.map(modifier => ({
+        modifiers: mg.modifierGroup.modifiers.map((modifier: any) => ({
           id: modifier.id,
           name: modifier.name,
           description: modifier.description,
@@ -620,7 +620,7 @@ export class MenuService {
       nutritionJson: updated.nutritionJson,
       sortOrder: updated.sortOrder,
       category: updated.category,
-      modifierGroups: updated.modifierGroups.map(mg => ({
+      modifierGroups: updated.modifierGroups.map((mg: any) => ({
         id: mg.modifierGroup.id,
         name: mg.modifierGroup.name,
         description: mg.modifierGroup.description,
@@ -628,7 +628,7 @@ export class MenuService {
         maxSelections: mg.modifierGroup.maxSelections,
         isRequired: mg.isRequired,
         sortOrder: mg.sortOrder,
-        modifiers: mg.modifierGroup.modifiers.map(modifier => ({
+        modifiers: mg.modifierGroup.modifiers.map((modifier: any) => ({
           id: modifier.id,
           name: modifier.name,
           description: modifier.description,

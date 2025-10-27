@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../lib/db';
-import type { PreOrderItem } from '@prisma/client';
+import type { PreOrderItem } from '../types/prisma-enums';
 
 export async function checkinRoutes(fastify: FastifyInstance) {
   

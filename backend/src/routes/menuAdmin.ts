@@ -22,7 +22,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         data: items
       };
     } catch (error) {
-      Logger.error('Failed to fetch menu items', { error });
+      Logger.error('Failed to fetch menu items', { error: error as Error });
       return reply.code(500).send({
         success: false,
         error: 'Failed to fetch menu items',
@@ -45,7 +45,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         data: item
       };
     } catch (error) {
-      Logger.error('Failed to fetch menu item', { error });
+      Logger.error('Failed to fetch menu item', { error: error as Error });
       return reply.code(404).send({
         success: false,
         error: 'Menu item not found',
@@ -81,7 +81,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Menu item created successfully'
       };
     } catch (error) {
-      Logger.error('Failed to create menu item', { error });
+      Logger.error('Failed to create menu item', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to create menu item',
@@ -119,7 +119,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Menu item updated successfully'
       };
     } catch (error) {
-      Logger.error('Failed to update menu item', { error });
+      Logger.error('Failed to update menu item', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to update menu item',
@@ -142,7 +142,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Menu item deleted successfully'
       };
     } catch (error) {
-      Logger.error('Failed to delete menu item', { error });
+      Logger.error('Failed to delete menu item', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to delete menu item',
@@ -168,7 +168,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Modifier groups attached successfully'
       };
     } catch (error) {
-      Logger.error('Failed to attach modifier groups', { error });
+      Logger.error('Failed to attach modifier groups', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to attach modifier groups',
@@ -195,7 +195,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         data: categories
       };
     } catch (error) {
-      Logger.error('Failed to fetch categories', { error });
+      Logger.error('Failed to fetch categories', { error: error as Error });
       return reply.code(500).send({
         success: false,
         error: 'Failed to fetch categories',
@@ -222,7 +222,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Category created successfully'
       };
     } catch (error) {
-      Logger.error('Failed to create category', { error });
+      Logger.error('Failed to create category', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to create category',
@@ -252,7 +252,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Category updated successfully'
       };
     } catch (error) {
-      Logger.error('Failed to update category', { error });
+      Logger.error('Failed to update category', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to update category',
@@ -275,7 +275,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Category deleted successfully'
       };
     } catch (error) {
-      Logger.error('Failed to delete category', { error });
+      Logger.error('Failed to delete category', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to delete category',
@@ -301,7 +301,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Categories reordered successfully'
       };
     } catch (error) {
-      Logger.error('Failed to reorder categories', { error });
+      Logger.error('Failed to reorder categories', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to reorder categories',
@@ -326,7 +326,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         data: groups
       };
     } catch (error) {
-      Logger.error('Failed to fetch modifier groups', { error });
+      Logger.error('Failed to fetch modifier groups', { error: error as Error });
       return reply.code(500).send({
         success: false,
         error: 'Failed to fetch modifier groups',
@@ -349,7 +349,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         data: group
       };
     } catch (error) {
-      Logger.error('Failed to fetch modifier group', { error });
+      Logger.error('Failed to fetch modifier group', { error: error as Error });
       return reply.code(404).send({
         success: false,
         error: 'Modifier group not found',
@@ -379,7 +379,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Modifier group created successfully'
       };
     } catch (error) {
-      Logger.error('Failed to create modifier group', { error });
+      Logger.error('Failed to create modifier group', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to create modifier group',
@@ -411,7 +411,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Modifier group updated successfully'
       };
     } catch (error) {
-      Logger.error('Failed to update modifier group', { error });
+      Logger.error('Failed to update modifier group', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to update modifier group',
@@ -434,7 +434,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Modifier group deleted successfully'
       };
     } catch (error) {
-      Logger.error('Failed to delete modifier group', { error });
+      Logger.error('Failed to delete modifier group', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to delete modifier group',
@@ -464,7 +464,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Modifier created successfully'
       };
     } catch (error) {
-      Logger.error('Failed to create modifier', { error });
+      Logger.error('Failed to create modifier', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to create modifier',
@@ -495,7 +495,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Modifier updated successfully'
       };
     } catch (error) {
-      Logger.error('Failed to update modifier', { error });
+      Logger.error('Failed to update modifier', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to update modifier',
@@ -518,7 +518,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Modifier deleted successfully'
       };
     } catch (error) {
-      Logger.error('Failed to delete modifier', { error });
+      Logger.error('Failed to delete modifier', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to delete modifier',
@@ -544,7 +544,7 @@ export async function menuAdminRoutes(fastify: FastifyInstance) {
         message: 'Modifiers reordered successfully'
       };
     } catch (error) {
-      Logger.error('Failed to reorder modifiers', { error });
+      Logger.error('Failed to reorder modifiers', { error: error as Error });
       return reply.code(400).send({
         success: false,
         error: 'Failed to reorder modifiers',

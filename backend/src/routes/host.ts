@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { hostService } from '../services/hostService';
-import { ReservationStatus } from '@prisma/client';
+import { ReservationStatus } from '../types/prisma-enums';
 import { Logger } from '../lib/logger';
 
 export async function hostRoutes(fastify: FastifyInstance) {
@@ -31,7 +31,7 @@ export async function hostRoutes(fastify: FastifyInstance) {
       };
 
     } catch (error) {
-      Logger.error('Failed to fetch today\'s reservations', { error });
+      Logger.error('Failed to fetch today\'s reservations', { error: error as Error });
       return reply.code(500).send({
         success: false,
         error: 'Failed to fetch reservations',
@@ -81,7 +81,7 @@ export async function hostRoutes(fastify: FastifyInstance) {
       };
 
     } catch (error) {
-      Logger.error('Failed to assign table', { error });
+      Logger.error('Failed to assign table', { error: error as Error });
       return reply.code(500).send({
         success: false,
         error: 'Failed to assign table',
@@ -140,7 +140,7 @@ export async function hostRoutes(fastify: FastifyInstance) {
       };
 
     } catch (error) {
-      Logger.error('Failed to update reservation status', { error });
+      Logger.error('Failed to update reservation status', { error: error as Error });
       return reply.code(500).send({
         success: false,
         error: 'Failed to update reservation status',
@@ -170,7 +170,7 @@ export async function hostRoutes(fastify: FastifyInstance) {
       };
 
     } catch (error) {
-      Logger.error('Failed to fetch available tables', { error });
+      Logger.error('Failed to fetch available tables', { error: error as Error });
       return reply.code(500).send({
         success: false,
         error: 'Failed to fetch tables',

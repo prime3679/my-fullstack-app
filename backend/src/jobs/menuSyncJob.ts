@@ -138,8 +138,8 @@ export class MenuSyncJob {
       // Sync menus in batches to avoid overwhelming POS APIs
       const results = await this.syncRestaurantsInBatches(eligibleRestaurants);
 
-      const successCount = results.filter((r) => r.success).length;
-      const failureCount = results.filter((r) => !r.success).length;
+      const successCount = results.filter((r: any) => r.success).length;
+      const failureCount = results.filter((r: any) => !r.success).length;
 
       const duration = Date.now() - startTime;
       Logger.info('Menu sync run completed', {
