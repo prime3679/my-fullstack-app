@@ -1,5 +1,6 @@
 import { db } from '../lib/db';
 import { ReservationStatus } from '@prisma/client';
+import { generateCheckInCode } from '../utils/qrcode';
 
 export interface CreateReservationInput {
   restaurantId: string;
@@ -174,6 +175,9 @@ export class ReservationService {
       throw new Error('Requested time slot is no longer available');
     }
 
+    // Generate unique check-in code for QR code
+    const checkInCode = generateCheckInCode();
+
     // Create the reservation
     const reservation = await db.reservation.create({
       data: {
@@ -182,7 +186,8 @@ export class ReservationService {
         partySize: input.partySize,
         startAt: input.startAt,
         status: ReservationStatus.BOOKED,
-        source: 'lacarta'
+        source: 'lacarta',
+        checkInCode
       },
       include: {
         user: {

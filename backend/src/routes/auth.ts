@@ -8,19 +8,7 @@ import Logger from '../lib/logger';
 import { businessEventLogger } from '../lib/middleware';
 import { SocialAuthService, SocialLoginRequest, SocialLoginResponse } from '../lib/socialAuth';
 import { emailService, WelcomeSequenceContext } from '../lib/emailService';
-
-// Helper function to convert unknown errors to proper error objects
-function formatError(error: unknown): { name: string; message: string; stack?: string; code?: string } {
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      code: (error as any).code
-    };
-  }
-  return { name: 'Unknown', message: String(error) };
-}
+import { formatError, FormattedError } from '../utils/formatError';
 
 // Validation schemas
 const signupSchema = z.object({
@@ -578,7 +566,7 @@ export async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/apple/callback', (request, reply) => {
     passport.authenticate('apple', { 
       failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=apple_auth_failed` 
-    }, async (err: Error | null, user: any) => {
+    }, async (err: any, user: any) => {
       if (err || !user) {
         Logger.error('Apple OAuth callback error', { err });
         return reply.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=apple_auth_failed`);

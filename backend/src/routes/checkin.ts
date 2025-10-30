@@ -1,9 +1,189 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../lib/db';
+import { isValidCheckInCode } from '../utils/qrcode';
 
 export async function checkinRoutes(fastify: FastifyInstance) {
-  
-  // Check-in via QR code scan
+
+  // Check-in via unique code (QR code scan)
+  fastify.post<{
+    Body: {
+      code: string;
+    };
+  }>('/', async (request, reply) => {
+    try {
+      const { code } = request.body;
+
+      // Validate code format
+      if (!code || !isValidCheckInCode(code)) {
+        return reply.code(400).send({
+          error: 'Invalid check-in code format'
+        });
+      }
+
+      // Find reservation by check-in code
+      const reservation = await db.reservation.findUnique({
+        where: { checkInCode: code },
+        include: {
+          checkin: true,
+          kitchenTicket: true,
+          preOrder: {
+            include: {
+              items: true
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          restaurant: {
+            select: {
+              id: true,
+              name: true,
+              slug: true
+            },
+            include: {
+              locations: {
+                take: 1,
+                include: {
+                  tables: {
+                    take: 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (!reservation) {
+        return reply.code(404).send({
+          error: 'Reservation not found with this check-in code'
+        });
+      }
+
+      if (reservation.status !== 'BOOKED') {
+        return reply.code(400).send({
+          error: 'Reservation must be BOOKED status to check in',
+          currentStatus: reservation.status
+        });
+      }
+
+      // Check if already checked in
+      if (reservation.checkin) {
+        return reply.code(400).send({
+          error: 'Reservation already checked in',
+          checkinTime: reservation.checkin.scannedAt
+        });
+      }
+
+      // Get location and table info for check-in
+      const location = reservation.restaurant.locations[0];
+      if (!location) {
+        return reply.code(400).send({
+          error: 'No location available for this restaurant'
+        });
+      }
+
+      // Create check-in record
+      const checkin = await db.checkIn.create({
+        data: {
+          reservationId: reservation.id,
+          method: 'QR_SCAN',
+          locationId: location.id,
+          tableId: location.tables[0]?.id,
+          scannedAt: new Date()
+        }
+      });
+
+      // Update reservation status to CHECKED_IN
+      await db.reservation.update({
+        where: { id: reservation.id },
+        data: { status: 'CHECKED_IN' }
+      });
+
+      // If there's a pre-order, create/update kitchen ticket with fire time
+      let newKitchenTicket = null;
+      if (reservation.preOrder) {
+        let kitchenTicket = reservation.kitchenTicket;
+
+        if (!kitchenTicket) {
+          // Calculate prep time based on pre-order items
+          const estimatedPrepTime = reservation.preOrder.items.reduce((total: number, item: any) => {
+            const itemPrepTime = 8; // Default prep time per item
+            return total + (itemPrepTime * item.quantity);
+          }, 0);
+
+          // Create kitchen ticket
+          newKitchenTicket = await db.kitchenTicket.create({
+            data: {
+              reservationId: reservation.id,
+              status: 'PENDING',
+              estimatedPrepMinutes: Math.max(estimatedPrepTime, 5),
+              fireAt: new Date(),
+              itemsJson: reservation.preOrder.items.map((item: any) => ({
+                name: item.name,
+                quantity: item.quantity,
+                modifiers: item.modifiersJson,
+                notes: item.notes,
+                allergens: item.allergensJson
+              }))
+            }
+          });
+
+          // Notify kitchen via WebSocket
+          const wsManager = (global as any).websocketManager;
+          if (wsManager) {
+            wsManager.notifyNewTicket(reservation.restaurant.id, {
+              ...newKitchenTicket,
+              reservation: {
+                user: reservation.user,
+                partySize: reservation.partySize,
+                startAt: reservation.startAt
+              }
+            });
+          }
+        }
+      }
+
+      // Create check-in event for audit trail
+      await db.event.create({
+        data: {
+          kind: 'reservation.checked_in',
+          actorId: reservation.userId,
+          restaurantId: reservation.restaurant.id,
+          reservationId: reservation.id,
+          payloadJson: {
+            method: 'QR_SCAN',
+            code,
+            locationId: location.id,
+            scannedAt: checkin.scannedAt
+          }
+        }
+      });
+
+      return {
+        success: true,
+        data: {
+          reservationId: reservation.id,
+          checkinId: checkin.id,
+          tableNumber: location.tables[0]?.label
+        },
+        message: 'Successfully checked in! Kitchen has been notified.'
+      };
+
+    } catch (error) {
+      console.error('Check-in failed:', error);
+      return reply.code(500).send({
+        error: 'Failed to process check-in',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Check-in via QR code scan (original endpoint for backward compatibility)
   fastify.post<{
     Body: { 
       reservationId: string; 

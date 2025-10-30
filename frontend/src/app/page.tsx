@@ -146,6 +146,15 @@ export default function HomePage() {
   });
   const [selectedTime, setSelectedTime] = useState('19:00');
 
+  // Must call useQuery before any conditional returns
+  const { data: restaurantsData, isLoading, error } = useQuery({
+    queryKey: ['restaurants', searchQuery, selectedLocation],
+    queryFn: () => searchQuery.trim() 
+      ? api.searchRestaurants(searchQuery, selectedLocation || undefined)
+      : api.getRestaurants(),
+    enabled: !!user, // Only run query if user is authenticated
+  });
+
   // If user is not authenticated, show the landing hero first
   if (!user) {
     return (
@@ -155,13 +164,6 @@ export default function HomePage() {
       </div>
     );
   }
-
-  const { data: restaurantsData, isLoading, error } = useQuery({
-    queryKey: ['restaurants', searchQuery, selectedLocation],
-    queryFn: () => searchQuery.trim() 
-      ? api.searchRestaurants(searchQuery, selectedLocation || undefined)
-      : api.getRestaurants(),
-  });
 
   if (isLoading) {
     return (

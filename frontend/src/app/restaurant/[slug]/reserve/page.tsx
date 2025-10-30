@@ -62,11 +62,14 @@ export default function ReservePage() {
     mutationFn: (data: any) => api.createReservation(data),
     onSuccess: (response) => {
       const reservationId = response.data.id;
-      router.push(`/restaurant/${restaurantSlug}/reservation/${reservationId}/confirmation`);
+      setShowConfirmation(false);
+      // Redirect to pre-order page after successful reservation
+      router.push(`/restaurant/${restaurantSlug}/reserve/${reservationId}/preorder`);
     },
     onError: (error) => {
       console.error('Reservation failed:', error);
-      alert('Failed to create reservation. Please try again.');
+      setValidationErrors({ general: 'Failed to create reservation. Please try again.' });
+      setShowConfirmation(false);
     }
   });
 

@@ -116,6 +116,7 @@ model Reservation {
   status       ReservationStatus @default(DRAFT)
   source       String            @default("lacarta")
   externalId   String?           @map("external_id")
+  checkInCode  String?           @unique @map("checkin_code") // Unique code for QR check-in
   createdAt    DateTime          @default(now()) @map("created_at")
   updatedAt    DateTime          @updatedAt @map("updated_at")
 
@@ -128,6 +129,7 @@ model Reservation {
   events         Event[]
 
   @@index([restaurantId, startAt])
+  @@index([checkInCode])
   @@map("reservation")
 }
 

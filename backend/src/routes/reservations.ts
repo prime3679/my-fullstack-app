@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { ReservationService } from '../services/reservationService';
+import { generateQRCodeDataURL } from '../utils/qrcode';
 
 const reservationService = new ReservationService();
 
@@ -128,15 +129,18 @@ export async function reservationRoutes(fastify: FastifyInstance) {
         specialRequests
       });
 
-      // Generate QR code URL (simplified for now)
-      const qrUrl = `${process.env.FRONTEND_URL}/checkin/${reservation.id}`;
+      // Generate QR code data URL if checkInCode exists
+      let qrCodeDataURL;
+      if (reservation.checkInCode) {
+        qrCodeDataURL = await generateQRCodeDataURL(reservation.checkInCode);
+      }
 
       return reply.code(201).send({
         success: true,
         data: {
           ...reservation,
-          qrUrl,
-          confirmationCode: reservation.id.slice(-8).toUpperCase()
+          qrCodeDataURL,
+          confirmationCode: reservation.checkInCode || reservation.id.slice(-8).toUpperCase()
         }
       });
     } catch (error) {
@@ -232,14 +236,14 @@ export async function reservationRoutes(fastify: FastifyInstance) {
 
   // Get reservations for a restaurant (for staff dashboard)
   fastify.get<{
-    Querystring: { 
+    Querystring: {
       restaurantId: string;
       date?: string;
     };
   }>('/restaurant/list', async (request, reply) => {
     try {
       const { restaurantId, date } = request.query;
-      
+
       if (!restaurantId) {
         return reply.code(400).send({
           error: 'restaurantId is required'
@@ -247,7 +251,7 @@ export async function reservationRoutes(fastify: FastifyInstance) {
       }
 
       const reservations = await reservationService.getReservationsByRestaurant(
-        restaurantId, 
+        restaurantId,
         date
       );
 
@@ -264,6 +268,44 @@ export async function reservationRoutes(fastify: FastifyInstance) {
       console.error('Failed to get restaurant reservations:', error);
       return reply.code(500).send({
         error: 'Failed to retrieve reservations'
+      });
+    }
+  });
+
+  // Get QR code for a reservation
+  fastify.get<{
+    Params: ReservationParams;
+  }>('/:id/qr', async (request, reply) => {
+    try {
+      const { id } = request.params;
+
+      const reservation = await reservationService.getReservation(id);
+
+      if (!reservation.checkInCode) {
+        return reply.code(400).send({
+          error: 'Reservation does not have a check-in code'
+        });
+      }
+
+      const qrCodeDataURL = await generateQRCodeDataURL(reservation.checkInCode);
+
+      return {
+        success: true,
+        data: {
+          qrCodeDataURL,
+          checkInCode: reservation.checkInCode,
+          checkInUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/checkin/${reservation.checkInCode}`
+        }
+      };
+    } catch (error) {
+      console.error('Failed to generate QR code:', error);
+      if (error instanceof Error && error.message === 'Reservation not found') {
+        return reply.code(404).send({
+          error: 'Reservation not found'
+        });
+      }
+      return reply.code(500).send({
+        error: 'Failed to generate QR code'
       });
     }
   });

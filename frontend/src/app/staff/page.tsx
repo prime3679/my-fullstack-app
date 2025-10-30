@@ -133,7 +133,9 @@ function StaffPortalContent() {
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {staffUser.role === 'HOST' && (
                 <>
-                  <button className="bg-blue-50 hover:bg-blue-100 text-blue-700 p-4 rounded-lg text-center transition-colors">
+                  <button 
+                    onClick={() => window.location.href = '/staff/reservations'}
+                    className="bg-blue-50 hover:bg-blue-100 text-blue-700 p-4 rounded-lg text-center transition-colors">
                     <div className="text-2xl mb-2">📋</div>
                     <div className="font-medium">View Reservations</div>
                   </button>
@@ -167,9 +169,11 @@ function StaffPortalContent() {
               
               {staffUser.role === 'KITCHEN' && (
                 <>
-                  <button className="bg-orange-50 hover:bg-orange-100 text-orange-700 p-4 rounded-lg text-center transition-colors">
+                  <button 
+                    onClick={() => window.location.href = '/kitchen'}
+                    className="bg-orange-50 hover:bg-orange-100 text-orange-700 p-4 rounded-lg text-center transition-colors">
                     <div className="text-2xl mb-2">📋</div>
-                    <div className="font-medium">Kitchen Tickets</div>
+                    <div className="font-medium">Kitchen Dashboard</div>
                   </button>
                   <button className="bg-red-50 hover:bg-red-100 text-red-700 p-4 rounded-lg text-center transition-colors">
                     <div className="text-2xl mb-2">🔥</div>
@@ -184,6 +188,18 @@ function StaffPortalContent() {
               
               {staffUser.role === 'MANAGER' && (
                 <>
+                  <button 
+                    onClick={() => window.location.href = '/staff/reservations'}
+                    className="bg-blue-50 hover:bg-blue-100 text-blue-700 p-4 rounded-lg text-center transition-colors">
+                    <div className="text-2xl mb-2">📋</div>
+                    <div className="font-medium">Reservations</div>
+                  </button>
+                  <button 
+                    onClick={() => window.location.href = '/kitchen'}
+                    className="bg-orange-50 hover:bg-orange-100 text-orange-700 p-4 rounded-lg text-center transition-colors">
+                    <div className="text-2xl mb-2">👨‍🍳</div>
+                    <div className="font-medium">Kitchen</div>
+                  </button>
                   <button className="bg-purple-50 hover:bg-purple-100 text-purple-700 p-4 rounded-lg text-center transition-colors">
                     <div className="text-2xl mb-2">📊</div>
                     <div className="font-medium">Analytics</div>
@@ -191,10 +207,6 @@ function StaffPortalContent() {
                   <button className="bg-blue-50 hover:bg-blue-100 text-blue-700 p-4 rounded-lg text-center transition-colors">
                     <div className="text-2xl mb-2">👥</div>
                     <div className="font-medium">Staff Management</div>
-                  </button>
-                  <button className="bg-green-50 hover:bg-green-100 text-green-700 p-4 rounded-lg text-center transition-colors">
-                    <div className="text-2xl mb-2">⚙️</div>
-                    <div className="font-medium">Settings</div>
                   </button>
                 </>
               )}
