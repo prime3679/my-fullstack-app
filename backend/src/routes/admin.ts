@@ -21,7 +21,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
         data: staff
       };
     } catch (error) {
-      Logger.error('Failed to fetch staff', { error });
+      Logger.error('Failed to fetch staff', { error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined });
       return reply.code(500).send({
         success: false,
         error: 'Failed to fetch staff',
@@ -49,7 +49,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
         message: 'Staff member invited successfully'
       };
     } catch (error) {
-      Logger.error('Failed to invite staff', { error });
+      Logger.error('Failed to invite staff', { error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined });
       return reply.code(400).send({
         success: false,
         error: 'Failed to invite staff',
@@ -84,7 +84,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
         message: 'Staff role updated successfully'
       };
     } catch (error) {
-      Logger.error('Failed to update staff role', { error });
+      Logger.error('Failed to update staff role', { error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined });
       return reply.code(400).send({
         success: false,
         error: 'Failed to update staff role',
@@ -112,7 +112,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
         message: 'Staff member removed successfully'
       };
     } catch (error) {
-      Logger.error('Failed to remove staff', { error });
+      Logger.error('Failed to remove staff', { error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined });
       return reply.code(400).send({
         success: false,
         error: 'Failed to remove staff',
@@ -137,7 +137,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
         data: settings
       };
     } catch (error) {
-      Logger.error('Failed to fetch settings', { error });
+      Logger.error('Failed to fetch settings', { error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined });
       return reply.code(500).send({
         success: false,
         error: 'Failed to fetch settings',
@@ -170,7 +170,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
         message: 'Settings updated successfully'
       };
     } catch (error) {
-      Logger.error('Failed to update settings', { error });
+      Logger.error('Failed to update settings', { error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined });
       return reply.code(400).send({
         success: false,
         error: 'Failed to update settings',
@@ -208,7 +208,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
         message: 'Restaurant info updated successfully'
       };
     } catch (error) {
-      Logger.error('Failed to update restaurant info', { error });
+      Logger.error('Failed to update restaurant info', { error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined });
       return reply.code(400).send({
         success: false,
         error: 'Failed to update restaurant info',
@@ -233,7 +233,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
         data: permissions
       };
     } catch (error) {
-      Logger.error('Failed to fetch permissions', { error });
+      Logger.error('Failed to fetch permissions', { error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined });
       return reply.code(500).send({
         success: false,
         error: 'Failed to fetch permissions',
@@ -252,7 +252,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
         data: roles
       };
     } catch (error) {
-      Logger.error('Failed to fetch roles', { error });
+      Logger.error('Failed to fetch roles', { error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined });
       return reply.code(500).send({
         success: false,
         error: 'Failed to fetch roles',

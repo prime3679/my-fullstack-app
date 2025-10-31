@@ -31,7 +31,9 @@ export async function hostRoutes(fastify: FastifyInstance) {
       };
 
     } catch (error) {
-      Logger.error('Failed to fetch today\'s reservations', { error });
+      Logger.error('Failed to fetch today\'s reservations', {
+        error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined
+      });
       return reply.code(500).send({
         success: false,
         error: 'Failed to fetch reservations',
@@ -65,8 +67,16 @@ export async function hostRoutes(fastify: FastifyInstance) {
         actorId
       });
 
+      if (!reservation) {
+        return reply.code(500).send({
+          success: false,
+          error: 'Failed to assign table',
+          message: 'Reservation not found after assignment'
+        });
+      }
+
       // Notify via WebSocket if available
-      const wsManager = globalThis.websocketManager;
+      const wsManager = (global as any).websocketManager;
       if (wsManager && reservation.restaurantId) {
         wsManager.notifyReservationUpdate(reservation.restaurantId, {
           type: 'table_assigned',
@@ -81,7 +91,9 @@ export async function hostRoutes(fastify: FastifyInstance) {
       };
 
     } catch (error) {
-      Logger.error('Failed to assign table', { error });
+      Logger.error('Failed to assign table', {
+        error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined
+      });
       return reply.code(500).send({
         success: false,
         error: 'Failed to assign table',
@@ -125,7 +137,7 @@ export async function hostRoutes(fastify: FastifyInstance) {
       );
 
       // Notify via WebSocket if available
-      const wsManager = globalThis.websocketManager;
+      const wsManager = (global as any).websocketManager;
       if (wsManager && reservation.restaurantId) {
         wsManager.notifyReservationUpdate(reservation.restaurantId, {
           type: 'status_updated',
@@ -140,7 +152,9 @@ export async function hostRoutes(fastify: FastifyInstance) {
       };
 
     } catch (error) {
-      Logger.error('Failed to update reservation status', { error });
+      Logger.error('Failed to update reservation status', {
+        error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined
+      });
       return reply.code(500).send({
         success: false,
         error: 'Failed to update reservation status',
@@ -170,7 +184,9 @@ export async function hostRoutes(fastify: FastifyInstance) {
       };
 
     } catch (error) {
-      Logger.error('Failed to fetch available tables', { error });
+      Logger.error('Failed to fetch available tables', {
+        error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined
+      });
       return reply.code(500).send({
         success: false,
         error: 'Failed to fetch tables',

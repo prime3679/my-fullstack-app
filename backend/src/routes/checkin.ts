@@ -105,7 +105,7 @@ export async function checkinRoutes(fastify: FastifyInstance) {
           });
 
           // Notify kitchen via WebSocket
-          const wsManager = globalThis.websocketManager;
+          const wsManager = (global as any).websocketManager;
           if (wsManager) {
             wsManager.notifyNewTicket(reservation.restaurantId, {
               ...newKitchenTicket,

@@ -73,7 +73,7 @@ async function start() {
     await wsManager.initialize();
     
     // Export websocket manager for use in other modules
-    globalThis.websocketManager = wsManager;
+    (global as any).websocketManager = wsManager;
 
     // Health check endpoint
     fastify.get('/api/health', async (request, reply) => {

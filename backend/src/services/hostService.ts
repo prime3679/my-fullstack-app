@@ -79,31 +79,23 @@ export class HostService {
               phone: true
             }
           },
-          table: {
-            select: {
-              id: true,
-              number: true,
-              seats: true,
-              zone: true
-            }
-          },
           preOrder: {
             include: {
               items: {
-                include: {
-                  menuItem: {
-                    select: {
-                      name: true,
-                      course: true
-                    }
-                  }
+                select: {
+                  id: true,
+                  name: true,
+                  quantity: true,
+                  price: true,
+                  modifiersJson: true,
+                  notes: true
                 }
               },
               payments: {
                 select: {
                   id: true,
                   status: true,
-                  totalAmount: true
+                  amount: true
                 }
               }
             }
@@ -111,7 +103,14 @@ export class HostService {
           checkin: {
             select: {
               id: true,
-              checkedInAt: true
+              scannedAt: true,
+              table: {
+                select: {
+                  id: true,
+                  label: true,
+                  seats: true
+                }
+              }
             }
           },
           kitchenTicket: {
@@ -143,24 +142,28 @@ export class HostService {
         date: startDate.toISOString().split('T')[0]
       };
     } catch (error) {
-      Logger.error('Error fetching today\'s reservations', { query, error });
+      Logger.error('Error fetching today\'s reservations', {
+        query,
+        error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined
+      });
       throw error;
     }
   }
 
   /**
-   * Assign a table to a reservation
+   * Assign a table to a reservation by updating/creating a CheckIn
    */
   async assignTable(input: UpdateTableAssignmentInput) {
     try {
       const { reservationId, tableId, actorId } = input;
 
-      // Verify table exists and get restaurant info for validation
+      // Verify table exists and get location info
       const table = await db.table.findUnique({
         where: { id: tableId },
         include: {
           location: {
             select: {
+              id: true,
               restaurantId: true
             }
           }
@@ -199,13 +202,36 @@ export class HostService {
         });
       }
 
-      // Update reservation with table assignment
-      const updatedReservation = await db.reservation.update({
+      // Check if check-in already exists
+      const existingCheckin = await db.checkIn.findUnique({
+        where: { reservationId }
+      });
+
+      if (existingCheckin) {
+        // Update existing check-in with new table
+        await db.checkIn.update({
+          where: { reservationId },
+          data: {
+            tableId,
+            locationId: table.locationId
+          }
+        });
+      } else {
+        // Create new check-in (this is for table assignment without actual guest check-in)
+        await db.checkIn.create({
+          data: {
+            reservationId,
+            tableId,
+            locationId: table.locationId,
+            method: 'MANUAL',
+            scannedAt: new Date()
+          }
+        });
+      }
+
+      // Get updated reservation with all includes
+      const updatedReservation = await db.reservation.findUnique({
         where: { id: reservationId },
-        data: {
-          tableId,
-          updatedAt: new Date()
-        },
         include: {
           user: {
             select: {
@@ -215,12 +241,17 @@ export class HostService {
               phone: true
             }
           },
-          table: {
+          checkin: {
             select: {
               id: true,
-              number: true,
-              seats: true,
-              zone: true
+              scannedAt: true,
+              table: {
+                select: {
+                  id: true,
+                  label: true,
+                  seats: true
+                }
+              }
             }
           },
           preOrder: {
@@ -242,14 +273,17 @@ export class HostService {
           reservationId,
           payloadJson: {
             tableId,
-            tableNumber: table.number
+            tableLabel: table.label
           }
         }
       });
 
       return updatedReservation;
     } catch (error) {
-      Logger.error('Error assigning table', { input, error });
+      Logger.error('Error assigning table', {
+        input,
+        error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined
+      });
       throw error;
     }
   }
@@ -289,20 +323,24 @@ export class HostService {
               phone: true
             }
           },
-          table: {
+          checkin: {
             select: {
               id: true,
-              number: true,
-              seats: true,
-              zone: true
+              scannedAt: true,
+              table: {
+                select: {
+                  id: true,
+                  label: true,
+                  seats: true
+                }
+              }
             }
           },
           preOrder: {
             include: {
               items: true
             }
-          },
-          checkin: true
+          }
         }
       });
 
@@ -322,7 +360,11 @@ export class HostService {
 
       return updatedReservation;
     } catch (error) {
-      Logger.error('Error updating reservation status', { reservationId, status, error });
+      Logger.error('Error updating reservation status', {
+        reservationId,
+        status,
+        error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined
+      });
       throw error;
     }
   }
@@ -338,7 +380,7 @@ export class HostService {
         include: {
           tables: {
             orderBy: {
-              number: 'asc'
+              label: 'asc'
             }
           }
         }
@@ -348,7 +390,7 @@ export class HostService {
         location.tables.map(table => ({
           ...table,
           locationId: location.id,
-          locationName: location.name
+          locationAddress: location.address
         }))
       );
 
@@ -377,8 +419,10 @@ export class HostService {
           status: {
             in: [ReservationStatus.BOOKED, ReservationStatus.CHECKED_IN]
           },
-          tableId: {
-            not: null
+          checkin: {
+            tableId: {
+              not: null
+            }
           }
         },
         include: {
@@ -386,13 +430,18 @@ export class HostService {
             select: {
               name: true
             }
+          },
+          checkin: {
+            select: {
+              tableId: true
+            }
           }
         }
       });
 
       // Map tables to availability
       const tablesWithAvailability = allTables.map(table => {
-        const assignedReservation = reservationsAtTime.find(r => r.tableId === table.id);
+        const assignedReservation = reservationsAtTime.find(r => r.checkin?.tableId === table.id);
         return {
           ...table,
           isAvailable: !assignedReservation,
@@ -407,7 +456,11 @@ export class HostService {
 
       return tablesWithAvailability;
     } catch (error) {
-      Logger.error('Error fetching available tables', { restaurantId, time, error });
+      Logger.error('Error fetching available tables', {
+        restaurantId,
+        time,
+        error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : undefined
+      });
       throw error;
     }
   }
